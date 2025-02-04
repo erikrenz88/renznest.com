@@ -8,7 +8,7 @@ about:
   image-width: 15em
   links:
     - text: "{{< iconify fa6-brands:bluesky size=3x >}}"
-      href: https://bsky.app/profile/erik@renznest.com
+      href: https://bsky.app/profile/renznest.com
       aria-label: "Bluesky icon that links to the Bluesky profile of Erik Renz"
     - text: "{{< iconify fa6-brands:github size=3x >}}"
       href: https://github.com/erikrenz88
