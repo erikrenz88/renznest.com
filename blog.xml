@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss  xmlns:atom="http://www.w3.org/2005/Atom" 
+      xmlns:media="http://search.yahoo.com/mrss/" 
+      xmlns:content="http://purl.org/rss/1.0/modules/content/" 
+      xmlns:dc="http://purl.org/dc/elements/1.1/" 
+      version="2.0">
+<channel>
+<title>The Renz Nest</title>
+<link>https://renznest.com/blog.html</link>
+<atom:link href="https://renznest.com/blog.xml" rel="self" type="application/rss+xml"/>
+<description>Honest information out in the open</description>
+<generator>quarto-1.6.40</generator>
+<lastBuildDate>Mon, 03 Feb 2025 00:00:00 GMT</lastBuildDate>
+<item>
+  <title>Welcome</title>
+  <dc:creator>Erik Renz</dc:creator>
+  <link>https://renznest.com/posts/250203-welcome/</link>
+  <description><![CDATA[ 
+
+
+
+
+
+<section id="intent" class="level2" data-number="1">
+<h2 data-number="1" class="anchored" data-anchor-id="intent"><span class="header-section-number">1</span> Intent</h2>
+<p>I work with data all day. I have an excellent understanding of pulling meaning from various datasets and creating narrative that is true to story and keeps the context of the data at the forefront. I my intent is to share my knowledge, some datasets, and information in a more public manor.</p>
+</section>
+<section id="how-this-will-work" class="level2" data-number="2">
+<h2 data-number="2" class="anchored" data-anchor-id="how-this-will-work"><span class="header-section-number">2</span> How this will work</h2>
+<p>My main goal is to keep this as open as possible: datasets, interpretations, assumptions. Hopefully what’s shown will draw some interaction and things can be expanded on with new context or debated in a public forum (I opt for Bluesky). My background is within chemistry, engineering, and medical science but I will likely broaden the topics to tackle some issues facing humans.</p>
+</section>
+<section id="what-to-expect" class="level2" data-number="3">
+<h2 data-number="3" class="anchored" data-anchor-id="what-to-expect"><span class="header-section-number">3</span> What to expect</h2>
+<p>Data analysis, inference, visualization, and opinions on various topics. These will be my opinions and will be subject to change. Sources will be provided whenever possible in order to maintain open and honest communication.</p>
+</section>
+<section id="get-in-touch" class="level2" data-number="4">
+<h2 data-number="4" class="anchored" data-anchor-id="get-in-touch"><span class="header-section-number">4</span> Get in touch</h2>
+<p>If there’s something of particular interest to you or something you’d like to see, reach out and let me know and I’ll add it to the list.</p>
+</section>
+<section id="special-thanks" class="level2" data-number="5">
+<h2 data-number="5" class="anchored" data-anchor-id="special-thanks"><span class="header-section-number">5</span> Special thanks</h2>
+<p>Thanks to all the <a href="https://quarto.org/about.html#project">Quarto team members</a> that made this platform available. Additional shout outs to <a href="https://mickael.canouil.fr/">Mickaël Canouil</a> for some excellent examples and <a href="https://bsky.app/profile/coatless.bsky.social">James Balamuta</a> for creating the Bluesky extension that makes the social interaction possible.</p>
+<section id="thumbnail-by-katie-moum-on-unsplash" class="level6" data-number="5.0.0.0.1">
+<h6 data-number="5.0.0.0.1" class="anchored" data-anchor-id="thumbnail-by-katie-moum-on-unsplash"><span class="header-section-number">5.0.0.0.1</span> Thumbnail by: <a href="&quot;https://unsplash.com/@katiemoum?utm_content=creditCopyText&amp;utm_medium=referral&amp;utm_source=unsplash&quot;">Katie Moum</a> on <a href="&quot;https://unsplash.com/photos/everyone-is-welcome-signage-7XGtYefMXiQ?utm_content=creditCopyText&amp;utm_medium=referral&amp;utm_source=unsplash&quot;">Unsplash</a></h6>
+
+
+</section>
+</section>
+
+ ]]></description>
+  <category>welcome</category>
+  <category>analysis</category>
+  <category>news</category>
+  <guid>https://renznest.com/posts/250203-welcome/</guid>
+  <pubDate>Mon, 03 Feb 2025 00:00:00 GMT</pubDate>
+  <media:content url="https://renznest.com/posts/250203-welcome/thumbnail.jpeg" medium="image" type="image/jpeg"/>
+</item>
+</channel>
+</rss>
