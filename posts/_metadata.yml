@@ -1,0 +1,42 @@
+# Options specified here will apply to all posts in this folder
+
+# freeze computational output
+# (see https://quarto.org/docs/projects/code-execution.html#freeze)
+freeze: true
+
+# Enable banner style title blocks
+title-block-banner: true
+
+author: 
+  - name: "Erik Renz"
+    orcid: "0000-0001-9751-0514"
+    url: "https://renznest.com"
+
+toc: true
+number-sections: true
+back-to-top-navigation: true
+
+knitr:
+  opts_chunk: 
+    collapse: true
+    comment: "#>"
+
+execute: 
+  warning: false
+  message: false
+
+# Enable Bluesky comments for all posts
+bluesky-comments:
+  enabled: true
+  profile: did:plc:q2qeo4572or5zc6vdbgcxjjf  # erenz88.bsky.social
+  mute-patterns:
+    - "📌"
+    - "🔥"
+    - "/\\bspam\\b/i"  # regex pattern
+  mute-users:
+    - "did:plc:q2qeo4572or5zc6vdbgcxjjf"
+    - "erik@renznest.com"
+  filter-empty-replies: true
+  n-show-init: 3
+  n-show-more: 2
+  n-show-depth: 3
