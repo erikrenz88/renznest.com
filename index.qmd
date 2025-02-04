@@ -25,6 +25,4 @@ page-layout: full
 
 ## Welcome to The Renz Nest
 
-
-
 I'm a data <span style="font-size: 2em;">🂻</span>-of-all-trades. Here, I share my thoughts and experiences on data, technology, and the spread of valueable and honest information.
