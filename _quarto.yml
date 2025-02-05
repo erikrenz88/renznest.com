@@ -12,6 +12,8 @@ website:
   site-url: https://renznest.com
   description: "Honest information out in the open"
   open-graph: true
+  cookie-consent: true
+  google-analytics: 'G-TJEDVLDBLF'
   page-navigation: true
   navbar:
     background: light
