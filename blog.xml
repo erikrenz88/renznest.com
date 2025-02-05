@@ -10,7 +10,28 @@
 <atom:link href="https://renznest.com/blog.xml" rel="self" type="application/rss+xml"/>
 <description>Honest information out in the open</description>
 <generator>quarto-1.6.40</generator>
-<lastBuildDate>Mon, 03 Feb 2025 00:00:00 GMT</lastBuildDate>
+<lastBuildDate>Tue, 04 Feb 2025 00:00:00 GMT</lastBuildDate>
+<item>
+  <title>M</title>
+  <dc:creator>Erik Renz</dc:creator>
+  <link>https://renznest.com/posts/250204-autism/</link>
+  <description><![CDATA[ 
+
+
+
+
+
+
+
+
+ ]]></description>
+  <category>autism</category>
+  <category>vaccines</category>
+  <category>news</category>
+  <guid>https://renznest.com/posts/250204-autism/</guid>
+  <pubDate>Tue, 04 Feb 2025 00:00:00 GMT</pubDate>
+  <media:content url="https://renznest.com/posts/250204-autism/thumbnail.jpg" medium="image" type="image/jpeg"/>
+</item>
 <item>
   <title>Welcome</title>
   <dc:creator>Erik Renz</dc:creator>

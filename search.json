@@ -1,5 +1,26 @@
 [
   {
+    "objectID": "index.html",
+    "href": "index.html",
+    "title": "Erik Renz",
+    "section": "",
+    "text": "I’m a data 🂻-of-all-trades. Here, I share my thoughts and experiences on data, technology, and the spread of valueable and honest information."
+  },
+  {
+    "objectID": "index.html#welcome-to-the-renz-nest",
+    "href": "index.html#welcome-to-the-renz-nest",
+    "title": "Erik Renz",
+    "section": "",
+    "text": "I’m a data 🂻-of-all-trades. Here, I share my thoughts and experiences on data, technology, and the spread of valueable and honest information."
+  },
+  {
+    "objectID": "blog.html",
+    "href": "blog.html",
+    "title": "Blog",
+    "section": "",
+    "text": "Order By\n       Default\n         \n          Title\n        \n         \n          Date - Oldest\n        \n         \n          Date - Newest\n        \n     \n  \n    \n      \n      \n    \n\n\n\n\n\n\n\n\n\n\nM\n\n\n\n\n\n\nautism\n\n\nvaccines\n\n\nnews\n\n\n\n\n\n\nFeb 4, 2025\n\n\n1 min\n\n\n\n\n\n\n\n\n\n\n\n\nWelcome\n\n\n\n\n\n\nwelcome\n\n\nanalysis\n\n\nnews\n\n\n\n\n\n\nFeb 3, 2025\n\n\n2 min\n\n\n\n\n\n\nNo matching items"
+  },
+  {
     "objectID": "posts/250203-welcome/index.html",
     "href": "posts/250203-welcome/index.html",
     "title": "Welcome",
@@ -40,26 +61,5 @@
     "title": "Welcome",
     "section": "5 Special thanks",
     "text": "5 Special thanks\nThanks to all the Quarto team members that made this platform available. Additional shout outs to Mickaël Canouil for some excellent examples and James Balamuta for creating the Bluesky extension that makes the social interaction possible.\n\n5.0.0.0.1 Thumbnail by: Katie Moum on Unsplash"
-  },
-  {
-    "objectID": "blog.html",
-    "href": "blog.html",
-    "title": "Blog",
-    "section": "",
-    "text": "Order By\n       Default\n         \n          Title\n        \n         \n          Date - Oldest\n        \n         \n          Date - Newest\n        \n     \n  \n    \n      \n      \n    \n\n\n\n\n\n\n\n\n\n\nWelcome\n\n\n\n\n\n\nwelcome\n\n\nanalysis\n\n\nnews\n\n\n\n\n\n\nFeb 3, 2025\n\n\n2 min\n\n\n\n\n\n\nNo matching items"
-  },
-  {
-    "objectID": "index.html",
-    "href": "index.html",
-    "title": "Erik Renz",
-    "section": "",
-    "text": "I’m a data 🂻-of-all-trades. Here, I share my thoughts and experiences on data, technology, and the spread of valueable and honest information."
-  },
-  {
-    "objectID": "index.html#welcome-to-the-renz-nest",
-    "href": "index.html#welcome-to-the-renz-nest",
-    "title": "Erik Renz",
-    "section": "",
-    "text": "I’m a data 🂻-of-all-trades. Here, I share my thoughts and experiences on data, technology, and the spread of valueable and honest information."
   }
 ]
