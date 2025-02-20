@@ -6,3 +6,49 @@ image: "thumbnail.jpg"
 bluesky-comments:
     enabled: true
 ---
+
+## Hot Take
+Recently, Donald Trump posted this (to his privately held social media company), Truth Social:
+![Truth Social Austism Post](image1.png)
+
+The intent is to bolster support for his Secretary of Health and Human Services pick, Robert F. Kennedy Jr.
+
+### Some context
+RFK Jr. has a fairly predictable political pattern. As an environmental lawyer, Kennedy fought hard to keep waters 
+clean and to move towards renewable energy. He fought against further development of pipelines, sued gas companies, 
+and fought fracking.[^1] There is also a painted past for the Democractic party and quotes reflecting poorly of Donald
+Trump's first presidency.[^2]
+
+In 2015, RFK Jr. joined the [Children's Health Defense](https://childrenshealthdefense.org/), which he now chairs.
+He uses his notariaty as a reputable environmental lawyer to push anti-vaccination agendas, to which he now claims
+(in senate confirmation meetings) that he is not anti-vaccination (**fact**: second slide on the image roulette on 
+Children's Health Defense displays promoting vaccine hesitant children's onesies, as of 4 Feb. 2025).
+
+As the Secretary of HHS, this is already a matter of concern due to the enormous role that vaccines play in public
+health. On top of this, RFK Jr. holds no credentials within healthcare or public health and is seemingly unaware or
+ignorant of clinical or epidemiological facts. Without delving too far into whether he is the appropriate candidate
+or not (*my take*: he's not and he's likely to be confirmed due to lack of congressional/senatorial backbone and 
+manipulation by external forces), I'd like to look at the facts regarding autism, it's origins of false-links to
+vaccination, and where Trump's numbers originate.
+
+## The claim
+| year |  rate  | % change[^3] |
+|------|--------|--------------|
+| 2005 | 0.01%  |       -      |
+| 2025 | 2.90%  |  ⬆️ 28900%   |
+
+: Autism rates (per DJT) {.responsive}
+
+## The data
+
+
+## The dicsussion
+
+
+## Concluding thoughts
+
+
+##### Photo by [CDC](https://unsplash.com/@cdc?utm_content=creditCopyText&utm_medium=referral&utm_source=unsplash) on [Unsplash](https://unsplash.com/photos/woman-in-black-crew-neck-t-shirt-wearing-white-face-mask-uN8TV9Pw2ik?utm_content=creditCopyText&utm_medium=referral&utm_source=unsplash)
+[^1]: https://en.wikipedia.org/wiki/Robert_F._Kennedy_Jr.
+[^2]: https://www.cnn.com/2024/11/21/politics/video/rfk-jr-past-trump-criticism-kfile-ebof-digvid
+[^3]: % change is calculated as $(Value2 - Value1)/Value1$

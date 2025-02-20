@@ -1,0 +1,268 @@
+---
+title: "Unconstitutionality"
+date: "2025-02-15"
+categories: [regulations, government, policy]
+image: "" 
+bluesky-comments:
+    enabled: true
+freeze: auto
+---
+
+```{python}
+#| label: set up libraries, logging, and API key
+import requests
+import logging
+import time
+import pandas as pd
+import gc 
+import re
+import urllib.parse
+
+# Configure logging for progress tracking
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+logger = logging.getLogger(__name__)
+
+# Define API key (replace with your actual API key)
+API_KEY = os.getenv('GOV_API')
+
+# Base URL for GovInfo API
+BASE_URL = "https://api.govinfo.gov"
+```
+
+```{python}
+#| label: create GovInfo API class for regulation
+def extract_offset_token(next_page_token):
+    """
+    Extracts and properly decodes the offsetMark token.
+
+    Args:
+        next_page_token (str): The nextPage value from the API response.
+
+    Returns:
+        str: A correctly formatted offsetMark token.
+    """
+    if next_page_token.startswith("http"):  
+        parsed_url = urllib.parse.urlparse(next_page_token)
+        query_params = urllib.parse.parse_qs(parsed_url.query)
+        extracted_token = query_params.get("offsetMark", [""])[0]
+    else:
+        extracted_token = next_page_token  
+
+    extracted_token = urllib.parse.unquote(extracted_token)  
+    return extracted_token
+
+def get_cfr_regulations(start_year: int = 2012, end_year: int = 2025) -> pd.DataFrame:
+    """
+    Fetches all CFR regulations from the GovInfo API, using correct pagination.
+
+    Args:
+        start_year (int): Start year for retrieval.
+        end_year (int): End year for retrieval.
+
+    Returns:
+        pd.DataFrame: DataFrame with all regulations.
+    """
+    all_data = []
+
+    for year in range(start_year, end_year + 1):
+        start_date = f"{year}-01-01T00:00:00Z"
+        end_date = f"{year}-12-31T23:59:59Z"
+        url = f"{BASE_URL}/published/{start_date}/{end_date}"
+
+        headers = {'Accept': 'application/json'}
+        params = {
+            "offsetMark": "*",  
+            "pageSize": 100,  
+            "collection": "CFR",
+            "api_key": API_KEY
+        }
+
+        logger.info(f"Fetching CFR regulations for {year}...")
+
+        more_results = True
+        retries = 3
+
+        while more_results and retries > 0:
+            try:
+                response = requests.get(url, params=params, headers=headers, timeout=30)
+                response.raise_for_status()
+
+                content = response.json()
+                packages = content.get("packages", [])
+
+                if not packages:
+                    logger.warning(f"No packages found for {year}.")
+                    break
+
+                all_data.extend(packages)
+                logger.info(f"Retrieved {len(packages)} records for {year}.")
+
+                # Check if there's a next page
+                if "nextPage" in content and content["nextPage"]:
+                    next_offset = extract_offset_token(content["nextPage"])
+
+                    if next_offset:
+                        params["offsetMark"] = next_offset  
+                        logger.info(f"Fetching next page with offset: {next_offset}")
+                        time.sleep(1)  
+                    else:
+                        logger.error("Failed to extract offsetMark. Stopping pagination.")
+                        more_results = False  
+                else:
+                    more_results = False  
+
+            except requests.exceptions.RequestException as e:
+                logger.error(f"API request failed for {year}: {e}")
+                retries -= 1
+                if retries > 0:
+                    logger.info(f"Retrying {year}... {retries} attempts remaining.")
+                    time.sleep(2)
+                else:
+                    logger.error(f"Max retries reached for {year}.")
+                    break
+
+    # Check if any data was collected
+    if not all_data:
+        logger.warning("No data retrieved. Returning an empty DataFrame.")
+        return pd.DataFrame()
+
+    # Convert to DataFrame
+    df = pd.DataFrame(all_data)
+
+    # Debugging: Print sample of DataFrame
+    logger.info(f"Initial DataFrame shape: {df.shape}")
+    logger.info(f"DataFrame Columns: {df.columns.tolist()}")
+
+    # Ensure required columns exist
+    required_columns = ["packageId", "title", "dateIssued", "lastModified", "granuleClass", "granuleType", "year"]
+    for col in required_columns:
+        if col not in df.columns:
+            df[col] = None  
+
+    df["year"] = df["dateIssued"].apply(lambda x: x[:4] if isinstance(x, str) else None)
+
+    # Debugging: Before filtering
+    logger.info(f"DataFrame shape before filtering: {df.shape}")
+
+    # **Move filtering AFTER collection**
+    if "granuleClass" in df.columns:
+        df = df[df["granuleClass"] != ""]  # Remove rows where granuleClass is missing
+        logger.info(f"DataFrame shape after removing rows with missing granuleClass: {df.shape}")
+    else:
+        logger.warning("granuleClass column missing. Skipping filtering step.")
+
+    return df
+```
+
+```{python}
+#| label: Initialize API and fetch regulations
+df = get_cfr_regulations()
+
+if df.empty:
+    logger.info("No CFR regulations found.")
+else:
+    logger.info(f"Total {len(df)} regulations found.")
+
+# Display the first few rows
+df.head()
+```
+
+```{python}
+#| label: set up function to retrieve granules
+def get_granules(package_id: str, page_size: int = 10):
+    """
+    Fetch granules (sections) for a given regulation package.
+
+    Args:
+        package_id (str): The package ID.
+        page_size (int): Number of granules per request.
+
+    Returns:
+        list: Granule metadata list.
+    """
+    url = f"{BASE_URL}/packages/{package_id}/granules?offsetMark=*&pageSize={page_size}&api_key={API_KEY}"
+    logger.info(f"Fetching granules for package: {package_id}")
+
+    try:
+        response = requests.get(url, headers={'Accept': 'application/json'}, timeout=30)
+        response.raise_for_status()
+        granules = response.json().get("granules", [])
+
+        if granules:
+            logger.info(f"Found {len(granules)} granules for package {package_id}.")
+        else:
+            logger.warning(f"No granules found for package {package_id}.")
+
+        return granules
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Failed to retrieve granules for package {package_id}: {e}")
+        return []
+```
+
+```{python}
+#| label: define function to get regulation in TXT if available
+def get_package_text(package_id: str):
+    """
+    Fetch the full text of a regulation if available in TXT format.
+
+    Args:
+        package_id (str): The package ID.
+
+    Returns:
+        str: The regulation's full text.
+    """
+    url = f"{BASE_URL}/packages/{package_id}/summary?api_key={API_KEY}"
+    logger.info(f"Fetching package summary for {package_id}")
+
+    try:
+        response = requests.get(url, headers={'Accept': 'application/json'}, timeout=30)
+        response.raise_for_status()
+        summary = response.json()
+
+        if "download" in summary and "txtLink" in summary["download"]:
+            txt_url = summary["download"]["txtLink"] + f"?api_key={API_KEY}"
+            response = requests.get(txt_url, headers={'Accept': 'text/plain'}, timeout=30)
+            response.raise_for_status()
+            return response.text
+        else:
+            logger.warning(f"Text content not available for package {package_id}")
+            return None
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Failed to retrieve text for package {package_id}: {e}")
+        return None
+```
+
+```{python}
+df = get_cfr_regulations()
+print(df.head())  # Check the first few records
+```
+
+```{python}
+#| label: pull and process all regulations and and text
+all_regulations = []
+
+for idx, row in df.iterrows():
+    package_id = row['packageId']
+    logger.info(f"Processing package {idx+1}/{len(df)}: {package_id}")
+
+    full_text = get_package_text(package_id)
+    granules = get_granules(package_id)
+
+    for g_idx, granule in enumerate(granules):
+        granule_id = granule.get("granuleId", "Unknown")
+        percent_complete = (g_idx + 1) / len(granules) * 100
+        logger.info(f"Fetching granule {g_idx+1}/{len(granules)} ({percent_complete:.2f}% complete) for {package_id}")
+
+    all_regulations.append({
+        "packageId": package_id,
+        "title": row["title"],
+        "dateIssued": row["dateIssued"],
+        "text": full_text if full_text else "No text available",
+        "granule_count": len(granules)
+    })
+
+    del full_text, granules
+    gc.collect()
+
+final_df = pd.DataFrame(all_regulations)
+```
