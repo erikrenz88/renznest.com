@@ -43,13 +43,6 @@ jobs:
         run: |
           echo "GOV_API=${{ secrets.GOV_API }}" >> $GITHUB_ENV
 
-      - name: Authenticate Google Drive
-        run: |
-          Rscript -e 'googledrive::drive_auth(path = NULL)'
-        env:
-          GOOGLEDRIVE_KEY: ${{ secrets.GOOGLEDRIVE_KEY }}
-          GOOGLEDRIVE_SECRET: ${{ secrets.GOOGLEDRIVE_SECRET }}
-
       - name: Render Quarto Project
         uses: quarto-dev/quarto-actions/render@v2
         env:
