@@ -16,10 +16,33 @@ jobs:
 
       - name: Set up Quarto
         uses: quarto-dev/quarto-actions/setup@v2
+        with:
+          version: 1.4.549  # Specify Quarto version for consistency
 
-      - name: Render and Publish
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests pandas polars gdown beautifulsoup4 pyyaml nbformat matplotlib seaborn jupyter
+
+      - name: Set up environment variables
+        run: |
+          echo "GOV_API=${{ secrets.GOV_API }}" >> $GITHUB_ENV
+
+      - name: Render Quarto Project
+        uses: quarto-dev/quarto-actions/render@v2
+        env:
+          GOV_API: ${{ secrets.GOV_API }}
+
+      - name: Publish to GitHub Pages
         uses: quarto-dev/quarto-actions/publish@v2
         with:
           target: gh-pages
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GOV_API: ${{ secrets.GOV_API }}
