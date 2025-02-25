@@ -62,3 +62,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GOV_API: ${{ secrets.GOV_API }}
+
+      - name: Setup Service Account Auth
+        run: |
+          echo "${{ secrets.GOOGLE_DRIVE_SA_KEY }}" | base64 -d > sa-key.json
+          echo "GOOGLE_APPLICATION_CREDENTIALS=sa-key.json" >> $GITHUB_ENV
