@@ -1,0 +1,2 @@
+*.csv filter=lfs diff=lfs merge=lfs -text
+posts/250215-regulations/full_regulations.csv filter=lfs diff=lfs merge=lfs -text

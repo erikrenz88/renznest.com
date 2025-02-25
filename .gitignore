@@ -53,3 +53,12 @@ rsconnect/
 /.luarc.json
 
 /_site/
+
+.env
+posts/250215-regulations/index.quarto_ipynb
+*.csv
+*.rds
+/_cache/
+/_freeze/
+large_file.csv
+quarto_ipynb
