@@ -192,14 +192,23 @@ def process_regulation_data(input_file="cfr_regulations.csv", output_file="full_
 #| label: import csv and complete counts
 #| cache: true
 # Check if the file already exists to avoid re-downloading
+file_id = "1Re-xRy9d3jZmWOVjvC4uwyi8UChxzUIY"
 output = "large_file.csv"
-if not os.path.exists(output):
-    file_id = "1Re-xRy9d3jZmWOVjvC4uwyi8UChxzUIY"
-    url = f"https://drive.google.com/uc?id={file_id}"
-    gdown.download(url, output, quiet=False)
+
+# Set up authentication from GitHub Secrets
+os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "credentials.json"
+
+# Use gdown with credentials
+gdown.download(id=file_id, output=output, quiet=False, fuzzy=True)
+
+if not os.path.exists(output) or os.path.getsize(output) == 0:
+    raise Exception("File download failed! Check Google Drive permissions and authentication.")
 
 # Define a lazy loading strategy with chunked reading for better memory management
-regs = pl.scan_csv(output, ignore_errors=True)
+try:
+    regs = pl.scan_csv(output).collect()
+except Exception as e:
+    raise RuntimeError(f"Failed to read CSV file: {e}")
 
 # Define the bureaucratic and explanatory terms
 bureaucratic_terms = ["shall", "must", "require", "submit", "authorize", "comply", "prohibit", "enforce", "mandatory"]
