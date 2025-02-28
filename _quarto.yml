@@ -23,8 +23,6 @@ website:
         href: index.qmd
       - text: "Blog"
         href: blog.qmd
-      - text: "About"
-        href: about.qmd
     right:
       - text: "{{< iconify fa6-brands:bluesky >}}"
         href: "https://bsky.app/profile/renznest.com"
