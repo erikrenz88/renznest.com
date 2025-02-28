@@ -44,19 +44,11 @@ jobs:
       - name: 🔑 Authenticate Google Drive
         run: |
           echo "${{ secrets.GOOGLE_DRIVE_SA_KEY }}" > gdrive_auth.json
-          Rscript -e 'library(googledrive); drive_auth("gdrive_auth.json")'
+          export GOOGLE_APPLICATION_CREDENTIALS=gdrive_auth.json
 
-      - name: 📥 Download & Process Data (Python)
-        run: python scripts/process_data.py
-
-      - name: 📊 Run Analysis (Python)
-        run: python scripts/analysis.py
-
-      - name: 📥 Download & Process Data (R)
-        run: Rscript scripts/process_data.R
-
-      - name: 📊 Run Analysis (R)
-        run: Rscript scripts/analysis.R
+      - name: 📥 Download data from Google Drive
+        run: |
+          gdown --id '1Re-xRy9d3jZmWOVjvC4uwyi8UChxzUIY' --output 'data.csv' --fuzzy
 
       - name: 🏗 Build Quarto Website
         uses: quarto-dev/quarto-actions/render@v2
