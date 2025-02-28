@@ -13,3 +13,4 @@ concurrent-log-handler
 jupyter
 nbconvert
 nbclient
+jupyter-cache
