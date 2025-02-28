@@ -1,0 +1,12 @@
+polars
+gdown
+requests
+pandas
+matplotlib
+seaborn
+yaml
+nbformat
+beautifulsoup4
+python-dotenv
+urllib3
+concurrent-log-handler
