@@ -2,679 +2,495 @@
 title: "Unconstitutionality"
 date: "2025-02-15"
 categories: [regulations, government, policy]
-format:
-  html:
-    code-fold: true
-    toc: true
-    fig-width: 8
-    fig-height: 6
+image: "" 
+bluesky-comments:
+    enabled: true
 freeze: auto
-execute:
-  cache: true
-  warning: false
-  message: false
 ---
 
-```{r setup}
+```{python}
 #| label: set up libraries, logging, and API key
-#| cache: true
+import requests
+import logging
+import time
+import pandas as pd
+import gc 
+import re
+import urllib.parse
+import csv
+import concurrent
+import gdown
+import polars as pl
+import ace_tools_open as tools
+from bs4 import BeautifulSoup
+import yaml
+import nbformat
+from dotenv import load_dotenv
 
-# Load required packages
-library(tidyverse)      # For data manipulation
-library(httr)           # For API requests
-library(stringr)        # For string manipulation
-library(googledrive)    # For accessing Google Drive files
-library(data.table)     # For efficient data handling
-library(lubridate)      # For date manipulation
-library(ggplot2)        # For visualization
-library(knitr)          # For table display
+# Configure logging for progress tracking
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+logger = logging.getLogger(__name__)
 
-# Configure logging
-log_info <- function(msg) {
-  cat(paste0(Sys.time(), " - INFO - ", msg, "\n"))
-}
+load_dotenv()
 
-log_error <- function(msg) {
-  cat(paste0(Sys.time(), " - ERROR - ", msg, "\n"))
-}
-
-# Define API key (use environment variable)
-API_KEY <- Sys.getenv("GOV_API")
-
+# Define API key (replace with your actual API key)
+API_KEY = os.getenv('GOV_API')
 # Base URL for GovInfo API
-GOVINFO_BASE_URL <- "https://api.govinfo.gov"
+GOVINFO_BASE_URL = "https://api.govinfo.gov"
 ```
 
-```{r data_collection_functions}
-#| label: functions to collect data from govinfo.gov
+```{python}
+#| label: python scripting to collect data from govinfo.gov
 #| eval: false
-#| echo: true
+def extract_offset_token(next_page_token):
+    #Extracts and properly decodes the offsetMark token for pagination.
+    if next_page_token.startswith("http"):  
+        parsed_url = urllib.parse.urlparse(next_page_token)
+        query_params = urllib.parse.parse_qs(parsed_url.query)
+        extracted_token = query_params.get("offsetMark", [""])[0]
+    else:
+        extracted_token = next_page_token  
 
-# This code is kept for reference but not executed during rendering
-# Data is fetched from Google Drive instead
+    return urllib.parse.unquote(extracted_token)
 
-extract_offset_token <- function(next_page_token) {
-  # Extracts and properly decodes the offsetMark token for pagination
-  if (grepl("^http", next_page_token)) {
-    parsed_url <- httr::parse_url(next_page_token)
-    extracted_token <- parsed_url$query$offsetMark
-  } else {
-    extracted_token <- next_page_token
-  }
-  return(utils::URLdecode(extracted_token))
-}
-
-get_cfr_regulations <- function(start_year = 2012, end_year = 2025, output_file = "cfr_regulations.csv") {
-  # Fetches all CFR regulations using pagination, streaming, and incremental file writing
-  
-  # Create a new file with headers
-  write.table(
-    data.frame(packageId = character(), title = character(), dateIssued = character()),
-    file = output_file, 
-    row.names = FALSE, 
-    col.names = TRUE, 
-    sep = ",", 
-    quote = TRUE
-  )
-  
-  for (year in start_year:end_year) {
-    start_date <- paste0(year, "-01-01T00:00:00Z")
-    end_date <- paste0(year, "-12-31T23:59:59Z")
-    url <- paste0(GOVINFO_BASE_URL, "/published/", start_date, "/", end_date)
+def get_cfr_regulations(start_year=2012, end_year=2025, output_file="cfr_regulations.csv"):
+    #Fetches all CFR regulations using pagination, streaming, and incremental file writing.
+    headers = {'Accept': 'application/json'}
     
-    offset_mark <- "*"
-    log_info(paste("Fetching CFR regulations for", year, "..."))
+    # Open file for streaming data storage
+    with open(output_file, "w", newline="", encoding="utf-8") as file:
+        writer = csv.writer(file)
+        writer.writerow(["packageId", "title", "dateIssued"])  # Header
+
+        for year in range(start_year, end_year + 1):
+            start_date = f"{year}-01-01T00:00:00Z"
+            end_date = f"{year}-12-31T23:59:59Z"
+            url = f"{GOVINFO_BASE_URL}/published/{start_date}/{end_date}"
+            params = {
+                "offsetMark": "*",
+                "pageSize": 100,
+                "collection": "CFR",
+                "api_key": API_KEY
+            }
+
+            logger.info(f"Fetching CFR regulations for {year}...")
+
+            while True:
+                try:
+                    response = requests.get(url, params=params, headers=headers, timeout=30, stream=True)
+                    response.raise_for_status()
+                    content = response.json()
+                    packages = content.get("packages", [])
+
+                    if not packages:
+                        logger.warning(f"No packages found for {year}.")
+                        break
+
+                    for pkg in packages:
+                        writer.writerow([pkg.get("packageId", ""), pkg.get("title", ""), pkg.get("dateIssued", "")])
+
+                    # Pagination Handling
+                    if "nextPage" in content and content["nextPage"]:
+                        next_offset = extract_offset_token(content["nextPage"])
+                        if next_offset:
+                            params["offsetMark"] = next_offset
+                            time.sleep(1)
+                        else:
+                            logger.error("Failed to extract offsetMark. Stopping pagination.")
+                            break
+                    else:
+                        break  # No more pages
+
+                except requests.exceptions.RequestException as e:
+                    logger.error(f"API request failed for {year}: {e}")
+                    break  # Stop processing this year if there's an issue
+
+def get_cfr_agency(package_id):
+    #Fetch agency information for a given CFR package from api.govinfo.gov.
+    url = f"{GOVINFO_BASE_URL}/packages/{package_id}/summary?api_key={API_KEY}"
+    headers = {'Accept': 'application/json'}
     
-    repeat {
-      tryCatch({
-        response <- httr::GET(
-          url,
-          query = list(
-            offsetMark = offset_mark, 
-            pageSize = 100, 
-            collection = "CFR", 
-            api_key = API_KEY
-          ),
-          httr::add_headers(Accept = "application/json"),
-          httr::timeout(30)
-        )
+    try:
+        response = requests.get(url, headers=headers, timeout=30)
+        response.raise_for_status()
+        data = response.json()
         
-        httr::stop_for_status(response)
-        content <- httr::content(response, "parsed")
-        packages <- content$packages
+        # ✅ Agency information may be in 'organization' or 'agency' fields
+        agency = data.get("organization", data.get("agency", "Unknown Agency"))
+        return agency
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Failed to retrieve agency for package {package_id}: {e}")
+        return "Unknown Agency"
+
+def get_granules(package_id):
+    #Fetches granules (sections) for a given regulation package.
+    url = f"{GOVINFO_BASE_URL}/packages/{package_id}/granules?offsetMark=*&pageSize=100&api_key={API_KEY}"
+    try:
+        response = requests.get(url, headers={'Accept': 'application/json'}, timeout=30)
+        response.raise_for_status()
+        return response.json().get("granules", [])
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Failed to retrieve granules for package {package_id}: {e}")
+        return []
+
+def get_package_text(package_id):
+    #Fetches full text of a regulation in TXT format if available.
+    url = f"{GOVINFO_BASE_URL}/packages/{package_id}/summary?api_key={API_KEY}"
+    try:
+        response = requests.get(url, headers={'Accept': 'application/json'}, timeout=30)
+        response.raise_for_status()
+        summary = response.json()
         
-        if (length(packages) == 0) {
-          log_info(paste("No packages found for", year))
-          break
-        }
+        if "download" in summary and "txtLink" in summary["download"]:
+            txt_url = summary["download"]["txtLink"] + f"?api_key={API_KEY}"
+            response = requests.get(txt_url, headers={'Accept': 'text/plain'}, timeout=30)
+            response.raise_for_status()
+            return response.text
+        else:
+            return "No text available"
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Failed to retrieve text for package {package_id}: {e}")
+        return "No text available"
+
+def process_regulation_data(input_file="cfr_regulations.csv", output_file="full_regulations.csv"):
+    #Processes CFR regulations: retrieves granules, full text, and agency info from api.govinfo.gov.
+    results = []
+    
+    df = pd.read_csv(input_file)
+
+    def fetch_data(row):
+        #Helper function for parallel execution.
+        package_id = row.packageId
+        text = get_package_text(package_id)
+        granules = get_granules(package_id)
         
-        # Extract and write data
-        regulations <- data.frame(
-          packageId = sapply(packages, function(pkg) ifelse(is.null(pkg$packageId), "", pkg$packageId)),
-          title = sapply(packages, function(pkg) ifelse(is.null(pkg$title), "", pkg$title)),
-          dateIssued = sapply(packages, function(pkg) ifelse(is.null(pkg$dateIssued), "", pkg$dateIssued))
-        )
-        
-        write.table(
-          regulations, 
-          file = output_file, 
-          append = TRUE, 
-          row.names = FALSE, 
-          col.names = FALSE, 
-          sep = ",", 
-          quote = TRUE
-        )
-        
-        # Pagination handling
-        if (!is.null(content$nextPage)) {
-          next_offset <- extract_offset_token(content$nextPage)
-          if (nchar(next_offset) > 0) {
-            offset_mark <- next_offset
-            Sys.sleep(1)
-          } else {
-            log_error("Failed to extract offsetMark. Stopping pagination.")
-            break
-          }
-        } else {
-          break  # No more pages
-        }
-      }, error = function(e) {
-        log_error(paste("API request failed for", year, ":", e$message))
-        break  # Stop processing this year if there's an issue
-      })
-    }
-  }
-}
+        # ✅ Fetch Agency Name from GovInfo API
+        agency_name = get_cfr_agency(package_id)
 
-get_cfr_agency <- function(package_id) {
-  # Fetch agency information for a given CFR package from api.govinfo.gov
-  url <- paste0(GOVINFO_BASE_URL, "/packages/", package_id, "/summary")
-  
-  tryCatch({
-    response <- httr::GET(
-      url,
-      query = list(api_key = API_KEY),
-      httr::add_headers(Accept = "application/json"),
-      httr::timeout(30)
-    )
-    
-    httr::stop_for_status(response)
-    data <- httr::content(response, "parsed")
-    
-    # Agency information may be in 'organization' or 'agency' fields
-    agency <- if (!is.null(data$organization)) {
-      data$organization
-    } else if (!is.null(data$agency)) {
-      data$agency
-    } else {
-      "Unknown Agency"
-    }
-    
-    return(agency)
-  }, error = function(e) {
-    log_error(paste("Failed to retrieve agency for package", package_id, ":", e$message))
-    return("Unknown Agency")
-  })
-}
+        return [package_id, row.title, row.dateIssued, agency_name, text, len(granules)]
 
-get_granules <- function(package_id) {
-  # Fetches granules (sections) for a given regulation package
-  url <- paste0(GOVINFO_BASE_URL, "/packages/", package_id, "/granules")
-  
-  tryCatch({
-    response <- httr::GET(
-      url,
-      query = list(offsetMark = "*", pageSize = 100, api_key = API_KEY),
-      httr::add_headers(Accept = "application/json"),
-      httr::timeout(30)
-    )
-    
-    httr::stop_for_status(response)
-    return(httr::content(response, "parsed")$granules)
-  }, error = function(e) {
-    log_error(paste("Failed to retrieve granules for package", package_id, ":", e$message))
-    return(list())
-  })
-}
+    logger.info(f"Processing {len(df)} CFR regulations with multi-threading...")
 
-get_package_text <- function(package_id) {
-  # Fetches full text of a regulation in TXT format if available
-  url <- paste0(GOVINFO_BASE_URL, "/packages/", package_id, "/summary")
-  
-  tryCatch({
-    response <- httr::GET(
-      url,
-      query = list(api_key = API_KEY),
-      httr::add_headers(Accept = "application/json"),
-      httr::timeout(30)
-    )
-    
-    httr::stop_for_status(response)
-    summary <- httr::content(response, "parsed")
-    
-    if (!is.null(summary$download) && !is.null(summary$download$txtLink)) {
-      txt_url <- paste0(summary$download$txtLink, "?api_key=", API_KEY)
-      
-      response <- httr::GET(
-        txt_url,
-        httr::add_headers(Accept = "text/plain"),
-        httr::timeout(30)
-      )
-      
-      httr::stop_for_status(response)
-      return(httr::content(response, "text", encoding = "UTF-8"))
-    } else {
-      return("No text available")
-    }
-  }, error = function(e) {
-    log_error(paste("Failed to retrieve text for package", package_id, ":", e$message))
-    return("No text available")
-  })
-}
+    with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
+        for result in executor.map(fetch_data, df.itertuples(index=False, name="CFRRecord")):
+            results.append(result)
+            gc.collect()
 
-process_regulation_data <- function(input_file = "cfr_regulations.csv", output_file = "full_regulations.csv") {
-  # Processes CFR regulations: retrieves granules, full text, and agency info from api.govinfo.gov
-  df <- read.csv(input_file, stringsAsFactors = FALSE)
-  results <- list()
-  
-  log_info(paste("Processing", nrow(df), "CFR regulations..."))
-  
-  for (i in 1:nrow(df)) {
-    package_id <- df$packageId[i]
-    title <- df$title[i]
-    date_issued <- df$dateIssued[i]
-    
-    text <- get_package_text(package_id)
-    granules <- get_granules(package_id)
-    agency_name <- get_cfr_agency(package_id)
-    
-    results[[i]] <- list(
-      packageId = package_id,
-      title = title,
-      dateIssued = date_issued,
-      agency = agency_name,
-      text = text,
-      granule_count = length(granules)
-    )
-    
-    if (i %% 10 == 0) {
-      log_info(paste("Processed", i, "of", nrow(df), "regulations"))
-      gc()  # Run garbage collection
-    }
-  }
-  
-  # Convert results to data frame
-  results_df <- do.call(rbind, lapply(results, function(x) {
-    data.frame(
-      packageId = x$packageId,
-      title = x$title,
-      dateIssued = x$dateIssued,
-      agency = x$agency,
-      text = x$text,
-      granule_count = x$granule_count,
-      stringsAsFactors = FALSE
-    )
-  }))
-  
-  # Write to CSV
-  write.csv(results_df, file = output_file, row.names = FALSE)
-  log_info(paste("Completed processing. Data saved to", output_file))
-}
+    with open(output_file, "w", newline="", encoding="utf-8") as file:
+        writer = csv.writer(file)
+        writer.writerow(["packageId", "title", "dateIssued", "agency", "text", "granule_count"])
+        writer.writerows(results)
 
-# Not executed - data retrieved from Google Drive instead
-# get_cfr_regulations(start_year = 2012, end_year = 2024)
-# process_regulation_data()
+    logger.info(f"Completed processing. Data saved to {output_file}")
+
+# get_cfr_regulations(start_year=2012, end_year=2024)  # Fetches regulations and saves to CSV
+
+# process_regulation_data()  # Retrieves granules & text, saves to a new CSV
 ```
 
-```{r import_data}
+```{python}
 #| label: import csv and complete counts
 #| cache: true
+# Check if the file already exists to avoid re-downloading
+output = "large_file.csv"
+if not os.path.exists(output):
+    file_id = "1Re-xRy9d3jZmWOVjvC4uwyi8UChxzUIY"
+    url = f"https://drive.google.com/uc?id={file_id}"
+    gdown.download(url, output, quiet=False)
 
-# Check if file exists, if not download it
-output <- "large_file.csv"
-if (!file.exists(output)) {
-  file_id <- "1Re-xRy9d3jZmWOVjvC4uwyi8UChxzUIY"
-  
-  # Using googledrive package to download
-  drive_auth(cache = FALSE)
-  drive_download(
-    as_id(file_id),
-    path = output,
-    overwrite = TRUE
-  )
-}
+# Define a lazy loading strategy with chunked reading for better memory management
+regs = pl.scan_csv(output, ignore_errors=True)
 
-# Read the CSV file with data.table for efficiency
-regs <- fread(
-  output, 
-  header = TRUE,
-  na.strings = c("NA", "", "NULL"),
-  stringsAsFactors = FALSE,
-  data.table = TRUE
-)
+# Define the bureaucratic and explanatory terms
+bureaucratic_terms = ["shall", "must", "require", "submit", "authorize", "comply", "prohibit", "enforce", "mandatory"]
+explanatory_terms = ["for the purposes of", "defined as", "background", "explains how"]
 
-# Convert dateIssued to a Date and extract year
-regs[, year := year(as.Date(dateIssued))]
+# Process and collect only necessary columns
+regs = regs.with_columns([
+    pl.col("dateIssued").str.to_date().dt.year().alias("year")
+]).collect()
+
+# Further data processing and analysis happens here...
 ```
 
-```{r bureaucratic_terms}
+```{python}
 #| label: ChatGPT/Claude assisted analysis
 #| cache: true
-
 # Define Bureaucratic & Complexity Term Functions
-bureaucratic_terms <- c("shall", "must", "require", "submit", "authorize", "comply", "prohibit", "enforce", "mandatory")
-explanatory_terms <- c("for the purposes of", "defined as", "background", "explains how")
+bureaucratic_terms = ["shall", "must", "require", "submit", "authorize", "comply", "prohibit", "enforce", "mandatory"]
+explanatory_terms = ["for the purposes of", "defined as", "background", "explains how"]
 
-# Function to count bureaucratic terms
-count_bureaucratic_terms <- function(text) {
-  if (is.na(text) || text == "") return(0)
-  
-  sum(sapply(bureaucratic_terms, function(term) {
-    str_count(text, regex(paste0("\\b", term, "\\b"), ignore_case = TRUE))
-  }))
-}
+def count_bureaucratic_terms(text: str) -> int:
+    return sum(len(re.findall(fr"\b{term}\b", text, re.IGNORECASE)) for term in bureaucratic_terms) if text else 0
 
-# Function to compute complexity ratio
-complexity_ratio <- function(text) {
-  if (is.na(text) || text == "") return(0)
-  
-  proc_count <- count_bureaucratic_terms(text)
-  exp_count <- sum(sapply(explanatory_terms, function(term) {
-    str_count(text, regex(paste0("\\b", term, "\\b"), ignore_case = TRUE))
-  }))
-  
-  return(proc_count / (exp_count + 1))  # Avoid division by zero
-}
+def complexity_ratio(text: str) -> float:
+    proc_count = count_bureaucratic_terms(text)
+    exp_count = sum(len(re.findall(fr"\b{term}\b", text, re.IGNORECASE)) for term in explanatory_terms) if text else 0
+    return proc_count / (exp_count + 1)  # Avoid division by zero
 
-# Process the data in chunks to manage memory
-batch_size <- 1000
-total_rows <- nrow(regs)
-num_batches <- ceiling(total_rows / batch_size)
-
-for (i in 1:num_batches) {
-  start_idx <- (i - 1) * batch_size + 1
-  end_idx <- min(i * batch_size, total_rows)
-  
-  batch <- regs[start_idx:end_idx, ]
-  
-  # Apply functions to the batch
-  regs[start_idx:end_idx, bureaucratic_terms := sapply(text, count_bureaucratic_terms)]
-  regs[start_idx:end_idx, complexity_ratio := sapply(text, complexity_ratio)]
-  
-  # Print progress
-  cat(sprintf("Processed batch %d of %d\n", i, num_batches))
-}
+# Process CFR Data
+regs = regs.with_columns([
+    pl.col("text").map_elements(count_bureaucratic_terms, return_dtype=pl.Int64).alias("bureaucratic_terms"),
+    pl.col("text").map_elements(complexity_ratio, return_dtype=pl.Float64).alias("complexity_ratio"),
+    pl.col("dateIssued").str.to_date().dt.year().alias("year")
+])
 ```
 
-```{r word_counts}
-#| label: Compute word counts
+```{python}
+#| label: Word counts and aggregation
 #| cache: true
 
-# Function to count words
-count_words <- function(text) {
-  if (is.na(text) || text == "") return(0)
-  length(strsplit(text, "\\s+")[[1]])
-}
+# Compute Word Counts
+regs = regs.with_columns(
+    pl.when(pl.col("text").is_not_null())
+    .then(pl.col("text").str.split(" ").list.len())
+    .otherwise(0)
+    .alias("reg_word_count")
+)
 
-# Function to count sections
-count_sections <- function(text) {
-  if (is.na(text) || text == "") return(0)
-  str_count(text, "<SECTION>")
-}
+regs = regs.with_columns(
+    pl.col("text").map_elements(lambda x: x.count("") if x else 0, return_dtype=pl.Int64).alias("rule_count")
+)
 
-# Function to count parts
-count_parts <- function(text) {
-  if (is.na(text) || text == "") return(0)
-  str_count(text, "<PART>")
-}
+# Count Parts (Number of Unique Parts)
+regs = regs.with_columns(
+    pl.col("text").map_elements(lambda x: x.count("") if x else 0, return_dtype=pl.Int64).alias("part_count")
+)
 
-# Process in batches
-for (i in 1:num_batches) {
-  start_idx <- (i - 1) * batch_size + 1
-  end_idx <- min(i * batch_size, total_rows)
-  
-  # Apply functions to the batch
-  regs[start_idx:end_idx, reg_word_count := sapply(text, count_words)]
-  regs[start_idx:end_idx, rule_count := sapply(text, count_sections)]
-  regs[start_idx:end_idx, part_count := sapply(text, count_parts)]
-  
-  # Print progress
-  cat(sprintf("Processed word count batch %d of %d\n", i, num_batches))
-}
-
-# Aggregate by Title & Year
-grouped_regs <- regs %>%
-  group_by(title, year) %>%
-  summarize(
-    total_rules = sum(rule_count, na.rm = TRUE),
-    total_parts = sum(part_count, na.rm = TRUE),
-    total_word_count = sum(reg_word_count, na.rm = TRUE),
-    total_bureaucratic_terms = sum(bureaucratic_terms, na.rm = TRUE),
-    avg_complexity_ratio = mean(complexity_ratio, na.rm = TRUE)
-  )
+## Aggregate by Title & Year
+grouped_regs = regs.group_by(["title", "year"]).agg([
+    pl.col("rule_count").sum().alias("total_rules"),  
+    pl.col("part_count").sum().alias("total_parts"),  
+    pl.col("reg_word_count").sum().alias("total_word_count"),
+    pl.col("bureaucratic_terms").sum().alias("total_bureaucratic_terms"),
+    pl.col("complexity_ratio").mean().alias("avg_complexity_ratio")
+])
 ```
 
-```{r analysis}
+```{python}
 #| label: Calculate metrics and display results
 #| cache: true
 
 # Compute Percentage Changes
-percent_change <- function(new, old) {
-  if (old == 0) return(0)
-  ((new - old) / old) * 100
-}
+def percent_change(new, old):
+    return ((new - old) / old) * 100 if old != 0 else 0
 
-years <- sort(unique(grouped_regs$year))
-analysis_results <- list()
+years = grouped_regs.select("year").unique().sort("year").to_series().to_list()
+analysis_results = {}
 
-for (i in 2:length(years)) {
-  prev_year <- years[i - 1]
-  curr_year <- years[i]
-  
-  prev_year_data <- grouped_regs %>% filter(year == prev_year)
-  curr_year_data <- grouped_regs %>% filter(year == curr_year)
-  
-  prev_word_count <- sum(prev_year_data$total_word_count)
-  curr_word_count <- sum(curr_year_data$total_word_count)
-  
-  prev_bureaucratic <- sum(prev_year_data$total_bureaucratic_terms)
-  curr_bureaucratic <- sum(curr_year_data$total_bureaucratic_terms)
-  
-  prev_complexity <- mean(prev_year_data$avg_complexity_ratio)
-  curr_complexity <- mean(curr_year_data$avg_complexity_ratio)
-  
-  word_growth <- percent_change(curr_word_count, prev_word_count)
-  bureaucratic_change <- percent_change(curr_bureaucratic, prev_bureaucratic)
-  complexity_change <- percent_change(curr_complexity, prev_complexity)
-  
-  efficiency_score <- if (word_growth != 0) {
-    (bureaucratic_change + complexity_change) / (2 * word_growth)
-  } else {
-    0
-  }
-  
-  analysis_results[[as.character(curr_year)]] <- list(
-    word_growth = word_growth,
-    bureaucratic_change = bureaucratic_change,
-    complexity_change = complexity_change,
-    efficiency_score = efficiency_score
-  )
-}
+for i in range(1, len(years)):
+    prev_year = years[i - 1]
+    curr_year = years[i]
+
+    prev_word_count = grouped_regs.filter(pl.col("year") == int(prev_year)).select("total_word_count").to_series().sum()
+    curr_word_count = grouped_regs.filter(pl.col("year") == int(curr_year)).select("total_word_count").to_series().sum()
+
+    prev_bureaucratic = grouped_regs.filter(pl.col("year") == int(prev_year)).select("total_bureaucratic_terms").to_series().sum()
+    curr_bureaucratic = grouped_regs.filter(pl.col("year") == int(curr_year)).select("total_bureaucratic_terms").to_series().sum()
+
+    prev_complexity = grouped_regs.filter(pl.col("year") == int(prev_year)).select("avg_complexity_ratio").to_series().mean()
+    curr_complexity = grouped_regs.filter(pl.col("year") == int(curr_year)).select("avg_complexity_ratio").to_series().mean()
+
+    word_growth = percent_change(curr_word_count, prev_word_count)
+    bureaucratic_change = percent_change(curr_bureaucratic, prev_bureaucratic)
+    complexity_change = percent_change(curr_complexity, prev_complexity)
+
+    efficiency_score = (bureaucratic_change + complexity_change) / (2 * word_growth) if word_growth != 0 else 0
+
+    analysis_results[curr_year] = {
+        "word_growth": word_growth,
+        "bureaucratic_change": bureaucratic_change,
+        "complexity_change": complexity_change,
+        "efficiency_score": efficiency_score
+    }
 
 # Fetch Laws Passed Per Year
-congress_map <- list(
-  "2012" = 112, "2013" = 113, "2014" = 113,
-  "2015" = 114, "2016" = 114,
-  "2017" = 115, "2018" = 115,
-  "2019" = 116, "2020" = 116,
-  "2021" = 117, "2022" = 117,
-  "2023" = 118, "2024" = 118
-)
+congress_map = {
+    2012: [112], 2013: [113], 2014: [113],
+    2015: [114], 2016: [114],
+    2017: [115], 2018: [115],
+    2019: [116], 2020: [116],
+    2021: [117], 2022: [117],
+    2023: [118], 2024: [118]
+}
 
 # Ensure laws_by_year dictionary is loaded
-laws_by_congress <- c(
-  "112" = 284,  # 2011-2012
-  "113" = 296,  # 2013-2014
-  "114" = 329,  # 2015-2016
-  "115" = 442,  # 2017-2018
-  "116" = 344,  # 2019-2020
-  "117" = 328,  # 2021-2022
-  "118" = 280   # 2023-2024
-)
+laws_by_congress = {
+    112: 284,  # 2011-2012
+    113: 296,  # 2013-2014
+    114: 329,  # 2015-2016
+    115: 442,  # 2017-2018
+    116: 344,  # 2019-2020
+    117: 328,  # 2021-2022
+    118: 280   # 2023-2024
+}
 
 # Convert Congress data to a per-year dictionary
-laws_by_year <- numeric()
+laws_by_year = {}
 
-for (year in names(congress_map)) {
-  congress <- congress_map[[year]]
-  laws <- laws_by_congress[[as.character(congress)]]
-  avg_laws_per_year <- round(laws / 2)  # Split evenly across 2 years
-  laws_by_year[year] <- avg_laws_per_year
-}
+for year, congresses in congress_map.items():
+    if isinstance(congresses, int):  # Convert to list if not already
+        congresses = [congresses]
+        
+    for congress in congresses:
+        laws = laws_by_congress.get(congress, 0)
+        avg_laws_per_year = laws // 2  # Split evenly across 2 years of a congress
+        laws_by_year[year] = avg_laws_per_year
 
-# Initialize analysis_results if not already done
-if (length(analysis_results) == 0) {
-  analysis_results <- list()
-}
+# Initialize analysis_results dictionary if not already done
+if not analysis_results:
+    analysis_results = {}
 
 # Compute all metrics per year
-sorted_years <- as.character(sort(as.numeric(names(laws_by_year))))
+sorted_years = sorted(laws_by_year.keys())  # Ensure chronological order
 
-for (i in seq_along(sorted_years)) {
-  year <- sorted_years[i]
-  year_num <- as.numeric(year)
-  
-  # Filter data for the current year
-  year_data <- regs[year == year_num]
-  
-  # Count total number of sections (granules)
-  num_sections <- sum(year_data$granule_count, na.rm = TRUE)
-  
-  # Count total word count for the year
-  total_word_count <- sum(year_data$reg_word_count, na.rm = TRUE)
-  
-  # Count bureaucratic words
-  total_bureaucratic_terms <- sum(year_data$bureaucratic_terms, na.rm = TRUE)
-  
-  # Get laws passed for the year
-  num_laws_passed <- laws_by_year[[year]]
-  if (is.null(num_laws_passed) || is.na(num_laws_passed)) num_laws_passed <- 1  # Default to prevent division by zero
-  
-  # Compute Unconstitutionality Index
-  unconstitutionality <- as.numeric(num_sections) / num_laws_passed
-  
-  # Compute Word Growth, Bureaucratic Change, Complexity Change
-  if (i > 1) {
-    prev_year <- sorted_years[i - 1]
-    prev_year_num <- as.numeric(prev_year)
-    prev_data <- regs[year == prev_year_num]
+for i, year in enumerate(sorted_years):
     
-    prev_word_count <- sum(prev_data$reg_word_count, na.rm = TRUE)
-    prev_bureaucratic_terms <- sum(prev_data$bureaucratic_terms, na.rm = TRUE)
-    prev_complexity <- mean(prev_data$complexity_ratio, na.rm = TRUE)
-    
-    # Compute Percentage Changes
-    word_growth <- percent_change(total_word_count, prev_word_count)
-    bureaucratic_change <- percent_change(total_bureaucratic_terms, prev_bureaucratic_terms)
-    
-    curr_complexity <- mean(year_data$complexity_ratio, na.rm = TRUE)
-    complexity_change <- percent_change(curr_complexity, prev_complexity)
-  } else {
-    word_growth <- 0
-    bureaucratic_change <- 0
-    complexity_change <- 0
-  }
-  
-  # Store all results
-  analysis_results[[year]] <- list(
-    num_sections = num_sections,
-    num_laws_passed = num_laws_passed,
-    total_word_count = total_word_count,
-    word_growth = word_growth,
-    total_bureaucratic_terms = total_bureaucratic_terms,
-    bureaucratic_change = bureaucratic_change,
-    complexity_change = complexity_change,
-    unconstitutionality_index = unconstitutionality
-  )
-}
+    # Count total number of sections (granules)
+    year_filtered = regs.filter(pl.col("year") == int(year))
+    num_sections = year_filtered["granule_count"].sum() if "granule_count" in year_filtered.columns else 0
 
-# Convert results to data frame
-df_results <- do.call(rbind.data.frame, lapply(analysis_results, function(x) {
-  as.data.frame(x)
-}))
+    # Count total word count for the year
+    total_word_count = year_filtered["reg_word_count"].sum() if "reg_word_count" in year_filtered.columns else 0
 
-# Add row names as a column
-df_results$year <- rownames(df_results)
+    # Count bureaucratic words
+    total_bureaucratic_terms = year_filtered["bureaucratic_terms"].sum() if "bureaucratic_terms" in year_filtered.columns else 0
+
+    # Get laws passed for the year
+    num_laws_passed = laws_by_year.get(int(year), 1)  # Default to 1 to prevent division by zero
+
+    # Compute Unconstitutionality Index
+    unconstitutionality = float(num_sections) / num_laws_passed if num_laws_passed > 0 else 0
+
+    # Compute Word Growth, Bureaucratic Change, Complexity Change
+    if i > 0:  # Ensure we have a previous year to compare against
+        prev_year = sorted_years[i - 1]
+        prev_filtered = regs.filter(pl.col("year") == int(prev_year))
+        
+        prev_word_count = prev_filtered["reg_word_count"].sum() if "reg_word_count" in prev_filtered.columns else 0
+        prev_bureaucratic_terms = prev_filtered["bureaucratic_terms"].sum() if "bureaucratic_terms" in prev_filtered.columns else 0
+        prev_complexity = prev_filtered["complexity_ratio"].mean() if "complexity_ratio" in prev_filtered.columns else 0
+        
+        # Compute Percentage Changes
+        word_growth = ((total_word_count - prev_word_count) / prev_word_count) * 100 if prev_word_count > 0 else 0
+        bureaucratic_change = ((total_bureaucratic_terms - prev_bureaucratic_terms) / prev_bureaucratic_terms) * 100 if prev_bureaucratic_terms > 0 else 0
+        
+        curr_complexity = year_filtered["complexity_ratio"].mean() if "complexity_ratio" in year_filtered.columns else 0
+        complexity_change = (curr_complexity - prev_complexity) if prev_complexity else 0
+    else:
+        word_growth = 0
+        bureaucratic_change = 0
+        complexity_change = 0
+
+    # Store all results
+    analysis_results[year] = {
+        "num_sections": num_sections,
+        "num_laws_passed": num_laws_passed,
+        "total_word_count": total_word_count,
+        "word_growth": word_growth,
+        "total_bureaucratic_terms": total_bureaucratic_terms,
+        "bureaucratic_change": bureaucratic_change,
+        "complexity_change": complexity_change,
+        "unconstitutionality_index": unconstitutionality
+    }
+
+# Convert results to DataFrame
+df_results = pd.DataFrame.from_dict(analysis_results, orient="index")
 
 # Ensure all necessary columns are included
-required_cols <- c(
-  "num_sections", "num_laws_passed", "total_word_count", 
-  "word_growth", "total_bureaucratic_terms", "bureaucratic_change", 
-  "complexity_change", "unconstitutionality_index", "year"
-)
+required_cols = ["num_sections", "num_laws_passed", "total_word_count", 
+                "word_growth", "total_bureaucratic_terms", "bureaucratic_change", 
+                "complexity_change", "unconstitutionality_index"]
 
-# Add any missing columns
-for (col in required_cols) {
-  if (!col %in% names(df_results)) {
-    df_results[[col]] <- 0
-  }
-}
+for col in required_cols:
+    if col not in df_results.columns:
+        df_results[col] = 0
+
+df_results = df_results[required_cols]
 
 # Convert numeric columns to proper types for consistency
-df_results <- df_results %>%
-  mutate(across(everything(), as.numeric)) %>%
-  mutate(year = as.numeric(year))
+df_results = df_results.astype(float)
 
 # Display the final DataFrame
-knitr::kable(df_results, caption = "Final CFR Analysis with Unconstitutionality Index")
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# Display the table
+df_results
 ```
 
-```{r visualize}
+```{python}
 #| label: Visualize results
 #| fig-width: 10
 #| fig-height: 8
 
 # Create visualizations
-par(mfrow = c(2, 2))
+fig, axs = plt.subplots(2, 2, figsize=(12, 10))
 
 # Unconstitutionality Index over time
-ggplot(df_results, aes(x = year, y = unconstitutionality_index)) +
-  geom_line() +
-  geom_point() +
-  theme_minimal() +
-  labs(
-    title = "Unconstitutionality Index by Year",
-    y = "Index Value",
-    x = "Year"
-  )
+axs[0, 0].plot(df_results.index, df_results['unconstitutionality_index'], marker='o', linestyle='-')
+axs[0, 0].set_title('Unconstitutionality Index by Year')
+axs[0, 0].set_ylabel('Index Value')
+axs[0, 0].set_xlabel('Year')
+axs[0, 0].grid(True)
 
 # Word Growth vs Bureaucratic Change
-ggplot(df_results, aes(x = year)) +
-  geom_line(aes(y = word_growth, color = "Word Growth %")) +
-  geom_point(aes(y = word_growth, color = "Word Growth %")) +
-  geom_line(aes(y = bureaucratic_change, color = "Bureaucratic Terms %")) +
-  geom_point(aes(y = bureaucratic_change, color = "Bureaucratic Terms %")) +
-  theme_minimal() +
-  labs(
-    title = "Word Growth vs Bureaucratic Change",
-    y = "Percent Change",
-    x = "Year",
-    color = "Metric"
-  )
+axs[0, 1].plot(df_results.index, df_results['word_growth'], marker='o', label='Word Growth %')
+axs[0, 1].plot(df_results.index, df_results['bureaucratic_change'], marker='x', label='Bureaucratic Terms %')
+axs[0, 1].set_title('Word Growth vs Bureaucratic Change')
+axs[0, 1].set_ylabel('Percent Change')
+axs[0, 1].set_xlabel('Year')
+axs[0, 1].legend()
+axs[0, 1].grid(True)
 
 # Sections vs Laws Passed
-ggplot(df_results) +
-  geom_bar(aes(x = factor(year), y = num_sections, fill = "Sections"), 
-           stat = "identity", alpha = 0.7, position = "dodge") +
-  geom_bar(aes(x = factor(year), y = num_laws_passed, fill = "Laws Passed"), 
-           stat = "identity", alpha = 0.5, position = "dodge") +
-  theme_minimal() +
-  labs(
-    title = "Regulations Sections vs Laws Passed",
-    y = "Count",
-    x = "Year",
-    fill = "Type"
-  )
+axs[1, 0].bar(df_results.index, df_results['num_sections'], alpha=0.7, label='Sections')
+axs[1, 0].bar(df_results.index, df_results['num_laws_passed'], alpha=0.5, label='Laws Passed')
+axs[1, 0].set_title('Regulations Sections vs Laws Passed')
+axs[1, 0].set_ylabel('Count')
+axs[1, 0].set_xlabel('Year')
+axs[1, 0].legend()
 
 # Complexity Change over time
-ggplot(df_results, aes(x = year, y = complexity_change)) +
-  geom_line(color = "red") +
-  geom_point(color = "red") +
-  theme_minimal() +
-  labs(
-    title = "Complexity Change by Year",
-    y = "Change in Complexity Ratio",
-    x = "Year"
-  )
+axs[1, 1].plot(df_results.index, df_results['complexity_change'], marker='o', color='red')
+axs[1, 1].set_title('Complexity Change by Year')
+axs[1, 1].set_ylabel('Change in Complexity Ratio')
+axs[1, 1].set_xlabel('Year')
+axs[1, 1].grid(True)
+
+plt.tight_layout()
+plt.show()
 ```
 
-```{r doge_comparison}
+```{python}
 # Load DOGE data for comparison
 # This is commented out if you don't have the file ready
-tryCatch({
-  doge <- read.csv('regulation-data.csv')
-  # Compare your results with DOGE data
-  # Add visualization code here
-}, error = function(e) {
-  message("DOGE data file not available for comparison")
-})
+try:
+    doge = pd.read_csv('regulation-data.csv', index_col=None)
+    # Compare your results with DOGE data
+    # Add visualization code here
+except:
+    print("DOGE data file not available for comparison")
 ```
 
+
 ### Background
-The Department of Government Efficiency (laughably/ironically/disrespectfully, [DOGE](https://en.wikipedia.org/wiki/Doge_(meme))) was created by [Executive Order](https://www.whitehouse.gov/presidential-actions/2025/01/establishing-and-implementing-the-presidents-department-of-government-efficiency/) on Jan. 20 2025. The purpose is defined as:
-> "This Executive Order establishes the Department of Government Efficiency to implement the President's DOGE Agenda, by modernizing Federal technology and software to maximize governmental efficiency and productivity."
+The Department of Government Efficiency (laughably/ironically/disrespectfully, [DOGE](https://en.wikipedia.org/wiki/Doge_(meme))) was created by [Exeutive Order](https://www.whitehouse.gov/presidential-actions/2025/01/establishing-and-implementing-the-presidents-department-of-government-efficiency/) on Jan. 20 2025. The purpose is defined as:
+> "This Executive Order establishes the Department of Government Efficiency to implement the President’s DOGE Agenda, by modernizing Federal technology and software to maximize governmental efficiency and productivity."
 
 Currently, there is ambiguity as to the DOGE administrator as shown in the various sources and quotes in the [Wikipedia article](https://en.wikipedia.org/wiki/Department_of_Government_Efficiency#:~:text=President%20Donald%20Trump%20confirmed%20Elon,required%20of%20full%20time%20employees.):
 > "Trump has said that businessman Elon Musk is "in charge" of DOGE, but the White House has denied that Musk is a DOGE administrator or DOGE employee,[9][2][10] and said Musk "has no actual or formal authority to make government decisions"."
 
-The contracted organization-the true status of the organization, not actually a department of the U.S. government-released the first version of their website recently (Feb. 12 2025) attempting to make their efficiency findings transparent through monies saved and an assessment of bureaucratic overreach. Many reports of the flaws in their savings analyses have been publicized but a concerning set of analysis is their regulations page.
+The contracted organization-the true status of the organization, not actually a department of the U.S. government-released the first version of their website recently (Feb. 12 2025) attempting to make their effiency findings transparent through monies saved and an assessment of bueraucractic overreach. Many reports of the flaws in their savings analyses have been publicized but a concerning set of analysis is their regulations page.
 
 Seemingly, the purpose of the page is to look at the amount of regulation (rules from agencies not created by congress) compared to the laws passed by Congress. That is to say there is more government rule making than congressional (representing the people's interests). The main metrics used are word counts by agency and year, and the Unconstitutionality Index.
 
 #### Unconstitutionally Index
-This index was created by the [Competitive Enterprise Institute](https://cei.org/opeds_articles/the-2025-unconstitutionality-index-exposing-congresss-abdication-of-power/), a nonprofit advocating for "regulatory reform on a wide range of policy issues". While a valid index, it should be treated as such-a tool to measure change in a group of representative data. It can provide a simple metric to track but does not provide full context. 
+This index was created by the (Competitive Enterprise Institude)[https://cei.org/opeds_articles/the-2025-unconstitutionality-index-exposing-congresss-abdication-of-power/], a nonprofit advocating for "regulatory reform on a wide range of policy issues". While a valid index, it should be treated as such-a tool to measure change in a group of representative data. It can provide a simple metric to track but does not provide full context. 
 
-It is included in this analysis to compare the various metrics being used to assess regulatory reach. The discussion will include why metrics can only represent and should not be removed from context.
+It is included in this analysis to compare the various metrics being used to asses regulatory reach. The discussion will include why metrics can only represent and should not be removed from context.
+
+Here, these metrics are reviewed and compared to other metrics created for the purpose of this analysis with idea generation and code assistance from generative AI tools (Claude/ChatGPT) which will be flagged where used. All code and data will be available open source for reproducibility and transparency.
 
 ### Methods
 
@@ -682,9 +498,9 @@ It is included in this analysis to compare the various metrics being used to ass
 Regulations were pulled from the GovInfo.gov API. All regulations were pulled between 2012 and 2014, looking for titles of regulations, the issued date of the regulation, and a package ID used to identify regulations and their details. Once regulations were pulled, granules (details for each regulation record) were pulled to obtain the agency that produced the regulation and text for each regulation.
 
 These were saved to .csv file stored on Google Drive due to size restrictions on GitHub. The .csv was loaded into python and the following metrics were calculated:
-- word count: count of all individual words within the full text of the regulation;
-- bureaucratic terms: count of all terms that described bureaucratic action ("shall", "must", "require", "submit", "authorize", "comply", "prohibit", "enforce", "mandatory"; note this list is not exhaustive but representative);
-- complexity ratio: ratio of bureaucratic terms to explanatory terms ("for the purposes of", "defined as", "background", "explains how"; note this list is not exhaustive but representative)
+    - word count: count of all individual words within the full text of the regulation;
+    - bueraucractic terms: count of all terms that described bueraucratic action ("shall", "must", "require", "submit", "authorize", "comply", "prohibit", "enforce", "mandatory"; note this list is not exhaustive but representative);
+    - complexity ratio: ratio of bureuacratic terms to explanatory terms ("for the purposes of", "defined as", "background", "explains how"; note this list is not exhaustive but representative)
 
 Percent changes year over year were calculated as:
 $$
@@ -694,9 +510,9 @@ $$
 The next calculation was the unconstitutionality index but requires numbers of laws by year. The method for gathering these is defined next.
 
 #### Laws
-Laws were counted from Congress.gov using the search feature for "Laws" between 2012 - 2024. Under "Legislative Action", "Laws Enacted" was selected. The specific congresses were selected by their year span and the years were mapped to congressional sessions. While inaccurate, laws were split evenly by the years of the congressional sessions (divided by 2) for a quick analysis. Improvements would be to manually count for each year that laws were passed but there is currently no automated way of collecting this data.
+Laws were counted from Congress.gov using the search feature for "Laws" between 2012 - 2024. Under "Legislative Action", "Laws Enacted" was selected. The specific congresses were selected by their year span and the years were mapped to congressional sessions. While innaccurate, laws were split evenly by the years of the congressional sessions (divided by 2) for a quick analysis. Improvements would be to manually count for each year that laws were passed but there is currently no automated way of collecting this data.
 
-#### Unconstitutionality Index
+#### Unconstitutionally Index
 $$
 \text{Unconstitutionality Index} = \frac{n_{regulations}}{{n_{laws}}}
 $$
@@ -704,21 +520,22 @@ $$
 ### Results
 
 #### Analysis findings
-[Results will be generated from the analysis]
+
 
 #### Comparison to DOGE results
-[Comparison will be generated if the DOGE dataset is available]
+```{python}
+doge = pd.read_csv('regulation-data.csv', index_col=None)
+```
 
 ### Discussion 
 
 #### Importance of context
-[Discussion will be added here after analysis results]
+
 
 #### Importance of transparency
-[Discussion will be added here after analysis results]
+
 
 #### Lack of expertise
-[Discussion will be added here after analysis results]
+
 
 ### Conclusion
-[Conclusion will be added here after analysis results]
