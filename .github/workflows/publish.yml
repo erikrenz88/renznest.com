@@ -1,63 +1,78 @@
-name: Publish Quarto Blog
+name: Publish Analysis
 
 on:
   push:
-    branches: [ main ]
-  workflow_dispatch:
+    branches:
+      - main
+  schedule:
+    - cron: "0 6 * * *"  # Runs daily at 6 AM UTC
+  workflow_dispatch:  # Allows manual execution
 
 jobs:
-  build-deploy:
+  build:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
+
     steps:
-      - name: Check out repository
+      - name: 🚀 Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Set up Quarto
-        uses: quarto-dev/quarto-actions/setup@v2
+      - name: 🔧 Set Up Python
+        uses: actions/setup-python@v4
         with:
-          version: 1.6.42  # Specify Quarto version for consistency
+          python-version: '3.10'
 
-      - name: Set up R
+      - name: 🔧 Install Python Dependencies
+        run: |
+          pip install -r requirements.txt  # Ensure you have a requirements.txt file
+          pip install polars gdown requests pandas matplotlib seaborn
+
+      - name: 🔧 Set Up R
         uses: r-lib/actions/setup-r@v2
         with:
-          r-version: '4.2.0'
-          use-public-rspm: true
+          r-version: '4.3.0'  # Ensure correct R version
 
-      - name: Set up R dependencies
-        uses: r-lib/actions/setup-r-dependencies@v2
-        with:
-          packages: |
-            any::tidyverse
-            any::httr
-            any::stringr
-            any::googledrive
-            any::data.table
-            any::lubridate
-            any::ggplot2
-            any::knitr
-            any::rmarkdown
-
-      - name: Set up environment variables
+      - name: 🔧 Install R Dependencies
         run: |
-          echo "GOV_API=${{ secrets.GOV_API }}" >> $GITHUB_ENV
+          Rscript -e 'install.packages(c("httr", "jsonlite", "readr", "dplyr", "lubridate", "tidyr", "ggplot2", "googledrive", "rpolars"))'
 
-      - name: Render Quarto Project
+      - name: 🔧 Install Quarto 1.6+
+        run: |
+          wget -qO- https://quarto.org/download/latest/quarto-linux-amd64.deb > quarto.deb
+          sudo dpkg -i quarto.deb
+          quarto check
+
+      - name: 🔑 Authenticate Google Drive
+        run: |
+          echo "${{ secrets.GOOGLE_DRIVE_SA_KEY }}" > gdrive_auth.json
+          Rscript -e 'library(googledrive); drive_auth("gdrive_auth.json")'
+
+      - name: 📥 Download & Process Data (Python)
+        run: python scripts/process_data.py
+
+      - name: 📊 Run Analysis (Python)
+        run: python scripts/analysis.py
+
+      - name: 📥 Download & Process Data (R)
+        run: Rscript scripts/process_data.R
+
+      - name: 📊 Run Analysis (R)
+        run: Rscript scripts/analysis.R
+
+      - name: 🏗 Build Quarto Website
         uses: quarto-dev/quarto-actions/render@v2
-        env:
-          GOV_API: ${{ secrets.GOV_API }}
 
-      - name: Publish to GitHub Pages
-        uses: quarto-dev/quarto-actions/publish@v2
+      - name: 📤 Publish to GitHub Pages
+        uses: actions/upload-pages-artifact@v3
         with:
-          target: gh-pages
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GOV_API: ${{ secrets.GOV_API }}
+          path: "_site/"  # Upload final website for publishing
 
-      - name: Set up Google Drive API Authentication
-        run: echo "$GDRIVE_SECRET_JSON" > gdrive-key.json
-        shell: bash
-        env:
-          GDRIVE_SECRET_JSON: ${{ secrets.GOOGLE_DRIVE_SA_KEY }}
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+
+    steps:
+      - name: 🚀 Deploy to GitHub Pages
+        uses: actions/deploy-pages@v4
