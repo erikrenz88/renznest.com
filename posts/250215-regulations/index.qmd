@@ -25,6 +25,7 @@ from bs4 import BeautifulSoup
 import yaml
 import nbformat
 from dotenv import load_dotenv
+import os
 
 # Configure logging for progress tracking
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
