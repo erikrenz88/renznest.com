@@ -215,11 +215,14 @@ bureaucratic_terms = ["shall", "must", "require", "submit", "authorize", "comply
 explanatory_terms = ["for the purposes of", "defined as", "background", "explains how"]
 
 # Process and collect only necessary columns
-regs = regs.with_columns([
-    pl.col("dateIssued").str.to_date().dt.year().alias("year")
-]).collect()
-
-# Further data processing and analysis happens here...
+if isinstance(regs, pl.LazyFrame):  
+    regs = regs.with_columns([
+        pl.col("dateIssued").str.to_date().dt.year().alias("year")
+    ]).collect() 
+else:
+    regs = regs.with_columns([
+        pl.col("dateIssued").str.to_date().dt.year().alias("year")
+    ]) 
 ```
 
 ```{python}
