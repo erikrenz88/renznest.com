@@ -26,6 +26,8 @@ import yaml
 import nbformat
 from dotenv import load_dotenv
 import os
+from pydrive.auth import GoogleAuth
+from pydrive.drive import GoogleDrive
 
 # Configure logging for progress tracking
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
@@ -193,16 +195,23 @@ def process_regulation_data(input_file="cfr_regulations.csv", output_file="full_
 #| cache: true
 # Check if the file already exists to avoid re-downloading
 file_id = "1Re-xRy9d3jZmWOVjvC4uwyi8UChxzUIY"
-output = "large_file.csv"
+#output = "large_file.csv"
 
 # Set up authentication from GitHub Secrets
 os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "credentials.json"
 
-# Use gdown with credentials
-gdown.download(id=file_id, output=output, quiet=False, fuzzy=True)
+gauth = GoogleAuth()
+gauth.LocalWebserverAuth()
+drive = GoogleDrive(gauth)
 
-if not os.path.exists(output) or os.path.getsize(output) == 0:
-    raise Exception("File download failed! Check Google Drive permissions and authentication.")
+downloaded_file = drive.CreateFile({'id': file_id})
+downloaded_file.GetContentFile('data.csv')
+
+# Use gdown with credentials
+#gdown.download(id=file_id, output=output, quiet=False, fuzzy=True)
+
+#if not os.path.exists(output) or os.path.getsize(output) == 0:
+#    raise Exception("File download failed! Check Google Drive permissions and authentication.")
 
 # Define a lazy loading strategy with chunked reading for better memory management
 try:
