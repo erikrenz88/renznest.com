@@ -1,18 +1,20 @@
-# Core Libraries
-requests
-logging
-pandas
+# Core libraries
 polars
-numpy
-re
-urllib3
-beautifulsoup4
-python-dotenv
-concurrent.futures
+gdown
+requests
+pandas
 matplotlib
 seaborn
-yaml
+PyYAML
 nbformat
+beautifulsoup4
+python-dotenv
+urllib3
+concurrent-log-handler
+jupyter
+nbconvert
+nbclient
+jupyter-cache
 
 # Google Drive Authentication & Downloading
 google-auth
