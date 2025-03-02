@@ -17,6 +17,7 @@ nbclient
 jupyter-cache
 
 # Google Drive Authentication & Downloading
+pydrive
 google-auth
 google-auth-oauthlib
 google-auth-httplib2
