@@ -200,18 +200,18 @@ file_id = "1Re-xRy9d3jZmWOVjvC4uwyi8UChxzUIY"
 # Set up authentication from GitHub Secrets
 os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "credentials.json"
 
-gauth = GoogleAuth()
-gauth.LocalWebserverAuth()
-drive = GoogleDrive(gauth)
+#gauth = GoogleAuth()
+#gauth.LocalWebserverAuth()
+#drive = GoogleDrive(gauth)
 
-downloaded_file = drive.CreateFile({'id': file_id})
-downloaded_file.GetContentFile('data.csv')
+#downloaded_file = drive.CreateFile({'id': file_id})
+#downloaded_file.GetContentFile('data.csv')
 
 # Use gdown with credentials
-#gdown.download(id=file_id, output=output, quiet=False, fuzzy=True)
+gdown.download(id=file_id, output=output, quiet=False, fuzzy=True)
 
-#if not os.path.exists(output) or os.path.getsize(output) == 0:
-#    raise Exception("File download failed! Check Google Drive permissions and authentication.")
+if not os.path.exists(output) or os.path.getsize(output) == 0:
+    raise Exception("File download failed! Check Google Drive permissions and authentication.")
 
 # Define a lazy loading strategy with chunked reading for better memory management
 try:
