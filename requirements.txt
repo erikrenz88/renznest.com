@@ -1,16 +1,27 @@
-polars
-gdown
+# Core Libraries
 requests
+logging
 pandas
-matplotlib
-seaborn
-PyYAML
-nbformat
+polars
+numpy
+re
+urllib3
 beautifulsoup4
 python-dotenv
-urllib3
-concurrent-log-handler
+concurrent.futures
+matplotlib
+seaborn
+yaml
+nbformat
+
+# Google Drive Authentication & Downloading
+google-auth
+google-auth-oauthlib
+google-auth-httplib2
+google-api-python-client
+pydrive2
+
+# Quarto & Jupyter Execution
 jupyter
-nbconvert
-nbclient
 jupyter-cache
+nbclient
