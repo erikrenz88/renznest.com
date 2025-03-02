@@ -195,7 +195,7 @@ def process_regulation_data(input_file="cfr_regulations.csv", output_file="full_
 #| cache: true
 # Check if the file already exists to avoid re-downloading
 file_id = "1Re-xRy9d3jZmWOVjvC4uwyi8UChxzUIY"
-#output = "large_file.csv"
+output = "large_file.csv"
 
 # Set up authentication from GitHub Secrets
 os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "credentials.json"
