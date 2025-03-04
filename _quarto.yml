@@ -49,3 +49,7 @@ bluesky-comments:
   app-password: true
   post-url: true
   
+execute:
+  echo: false
+  message: false
+  warning: false
