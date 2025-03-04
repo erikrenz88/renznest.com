@@ -259,6 +259,13 @@ grouped_regs = regs.group_by(["title", "year"]).agg([
     pl.col("bureaucratic_terms").sum().alias("total_bureaucratic_terms"),
     pl.col("complexity_ratio").mean().alias("avg_complexity_ratio"),
 ])
+
+# Melt dataframe
+meleted_regs = grouped_regs.melt(
+    id_vars = ['title', 'year'],
+    var_name='metric',
+    value_name='value'
+)
 ```
 
 ```{python}
@@ -276,8 +283,8 @@ for i in range(1, len(years)):
     prev_year = years[i - 1]
     curr_year = years[i]
 
-    prev_data = grouped_regs.filter(pl.col("year") == prev_year)
-    curr_data = grouped_regs.filter(pl.col("year") == curr_year)
+    prev_data = melted_regs.filter(pl.col("year") == prev_year)
+    curr_data = melted_regs.filter(pl.col("year") == curr_year)
 
     prev_word_count = prev_data.filter(pl.col("metric") == "total_word_count")["value"].sum()
     curr_word_count = curr_data.filter(pl.col("metric") == "total_word_count")["value"].sum()
