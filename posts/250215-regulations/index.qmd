@@ -261,7 +261,7 @@ grouped_regs = regs.group_by(["title", "year"]).agg([
 ])
 
 # Melt dataframe
-meleted_regs = grouped_regs.melt( 
+melted_regs = grouped_regs.melt( 
     id_vars = ['title', 'year'],
     variable_name='metric',
     value_name='value'
