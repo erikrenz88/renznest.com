@@ -261,9 +261,9 @@ grouped_regs = regs.group_by(["title", "year"]).agg([
 ])
 
 # Melt dataframe
-meleted_regs = grouped_regs.melt(
+meleted_regs = grouped_regs.melt( 
     id_vars = ['title', 'year'],
-    var_name='metric',
+    variable_name='metric',
     value_name='value'
 )
 ```
@@ -359,20 +359,14 @@ df_melted = df_results.unpivot(
     value_vars=["num_laws_passed", "num_sections"], 
 ).rename({"variable": "count_type", "value": "value"})  
 
-grouped_regs = grouped_regs.melt(
-    id_vars=["title", "year"],
-    variable_name="metric",
-    value_name="value"
-)
-
 # Convert to dictionary format (array of objects)
 df_melted_json = df_melted.to_dicts()
-grouped_regs_json = grouped_regs.to_dicts()
+melted_regs_json = melted_regs.to_dicts()
 yoy_json = df_results.to_dicts()
 
 # Send to OJS
 ojs_define(data=df_melted_json)
-ojs_define(int=grouped_regs_json)
+ojs_define(int=melted_regs_json)
 ojs_define(yoy=yoy_json)
 ```
 
