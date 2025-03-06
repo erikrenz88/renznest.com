@@ -370,6 +370,53 @@ ojs_define(int=melted_regs_json)
 ojs_define(yoy=yoy_json)
 ```
 
+### Background
+The Department of Government Efficiency (laughably/ironically/disrespectfully, [DOGE](https://en.wikipedia.org/wiki/Doge_(meme))) was created by [Exeutive Order](https://www.whitehouse.gov/presidential-actions/2025/01/establishing-and-implementing-the-presidents-department-of-government-efficiency/) on Jan. 20 2025. The purpose is defined as:
+> "This Executive Order establishes the Department of Government Efficiency to implement the President’s DOGE Agenda, by modernizing Federal technology and software to maximize governmental efficiency and productivity."
+
+Currently, there is ambiguity as to the DOGE administrator as shown in the various sources and quotes in the [Wikipedia article](https://en.wikipedia.org/wiki/Department_of_Government_Efficiency#:~:text=President%20Donald%20Trump%20confirmed%20Elon,required%20of%20full%20time%20employees.):
+> "Trump has said that businessman Elon Musk is "in charge" of DOGE, but the White House has denied that Musk is a DOGE administrator or DOGE employee,[9][2][10] and said Musk "has no actual or formal authority to make government decisions"."
+
+The contracted organization-the true status of the organization, not actually a department of the U.S. government-released the first version of their website recently (Feb. 12 2025) attempting to make their effiency findings transparent through monies saved and an assessment of bueraucractic overreach. Many reports of the flaws in their savings analyses have been publicized but a concerning set of analysis is their regulations page.
+
+Seemingly, the purpose of the page is to look at the amount of regulation (rules from agencies not created by congress) compared to the laws passed by Congress. That is to say there is more government rule making than congressional (representing the people's interests). The main metrics used are word counts by agency and year, and the Unconstitutionality Index.
+
+#### Unconstitutionally Index
+This index was created by the (Competitive Enterprise Institude)[https://cei.org/opeds_articles/the-2025-unconstitutionality-index-exposing-congresss-abdication-of-power/], a nonprofit advocating for "regulatory reform on a wide range of policy issues". While a valid index, it should be treated as such-a tool to measure change in a group of representative data. It can provide a simple metric to track but does not provide full context. 
+
+It is included in this analysis to compare the various metrics being used to asses regulatory reach. The discussion will include why metrics can only represent and should not be removed from context.
+
+Here, these metrics are reviewed and compared to other metrics created for the purpose of this analysis with idea generation and code assistance from generative AI tools (Claude/ChatGPT) which will be flagged where used. All code and data will be available open source for reproducibility and transparency.
+
+### Methods
+
+#### Regulations
+Regulations were pulled from the GovInfo.gov API. All regulations were pulled between 2012 and 2014, looking for titles of regulations, the issued date of the regulation, and a package ID used to identify regulations and their details. Once regulations were pulled, granules (details for each regulation record) were pulled to obtain the agency that produced the regulation and text for each regulation.
+
+These were saved to .csv file stored on Google Drive due to size restrictions on GitHub. The .csv was loaded into python and the following metrics were calculated:
+    - word count: count of all individual words within the full text of the regulation;
+    - bueraucractic terms: count of all terms that described bueraucratic action ("shall", "must", "require", "submit", "authorize", "comply", "prohibit", "enforce", "mandatory"; note this list is not exhaustive but representative);
+    - complexity ratio: ratio of bureuacratic terms to explanatory terms ("for the purposes of", "defined as", "background", "explains how"; note this list is not exhaustive but representative)
+
+Percent changes year over year were calculated as:
+$$
+\text{Percent Change} = \frac{year_{new} - year_{old}}{year_{old}} \times 100
+$$
+
+The next calculation was the unconstitutionality index but requires numbers of laws by year. The method for gathering these is defined next.
+
+#### Laws
+Laws were counted from Congress.gov using the search feature for "Laws" between 2012 - 2024. Under "Legislative Action", "Laws Enacted" was selected. The specific congresses were selected by their year span and the years were mapped to congressional sessions. While innaccurate, laws were split evenly by the years of the congressional sessions (divided by 2) for a quick analysis. Improvements would be to manually count for each year that laws were passed but there is currently no automated way of collecting this data.
+
+#### Unconstitutionally Index
+$$
+\text{Unconstitutionality Index} = \frac{n_{regulations}}{{n_{laws}}}
+$$
+
+### Results
+
+#### Analysis findings
+Below is the number of rules and laws by year done with the above method.
 ```{ojs}
 Plot = await import('https://cdn.jsdelivr.net/npm/@observablehq/plot@0.6.16/+esm')
 
@@ -394,6 +441,7 @@ Plot.plot({
 })
 ```
 
+The next chart compares DOGE word counts by year to the above methods word count by year.
 ```{ojs}
 // DOGE Comparison (Word Counts vs. Sections of Regulation)
 Plot.plot({
@@ -413,6 +461,9 @@ Plot.plot({
 })
 ```
 
+
+
+As these seemed to fall short, the next charts look at various metrics (produced with help from ChatGPT Data Analyst (4o) and Claude Sonnet 3.5) that look at things like bureaucracy, efficiency, and word counts by agency by year, as well as year over year changes. The charts can be filtered by all agencies (titles in the data).
 ```{ojs}
 // Line Chart for Word Count by Agency over Time (With Checkboxes)
 viewof agency = Inputs.checkbox(
@@ -460,59 +511,6 @@ Plot.plot({
     Plot.ruleY([0])
   ]
 })
-```
-
-### Background
-The Department of Government Efficiency (laughably/ironically/disrespectfully, [DOGE](https://en.wikipedia.org/wiki/Doge_(meme))) was created by [Exeutive Order](https://www.whitehouse.gov/presidential-actions/2025/01/establishing-and-implementing-the-presidents-department-of-government-efficiency/) on Jan. 20 2025. The purpose is defined as:
-> "This Executive Order establishes the Department of Government Efficiency to implement the President’s DOGE Agenda, by modernizing Federal technology and software to maximize governmental efficiency and productivity."
-
-Currently, there is ambiguity as to the DOGE administrator as shown in the various sources and quotes in the [Wikipedia article](https://en.wikipedia.org/wiki/Department_of_Government_Efficiency#:~:text=President%20Donald%20Trump%20confirmed%20Elon,required%20of%20full%20time%20employees.):
-> "Trump has said that businessman Elon Musk is "in charge" of DOGE, but the White House has denied that Musk is a DOGE administrator or DOGE employee,[9][2][10] and said Musk "has no actual or formal authority to make government decisions"."
-
-The contracted organization-the true status of the organization, not actually a department of the U.S. government-released the first version of their website recently (Feb. 12 2025) attempting to make their effiency findings transparent through monies saved and an assessment of bueraucractic overreach. Many reports of the flaws in their savings analyses have been publicized but a concerning set of analysis is their regulations page.
-
-Seemingly, the purpose of the page is to look at the amount of regulation (rules from agencies not created by congress) compared to the laws passed by Congress. That is to say there is more government rule making than congressional (representing the people's interests). The main metrics used are word counts by agency and year, and the Unconstitutionality Index.
-
-#### Unconstitutionally Index
-This index was created by the (Competitive Enterprise Institude)[https://cei.org/opeds_articles/the-2025-unconstitutionality-index-exposing-congresss-abdication-of-power/], a nonprofit advocating for "regulatory reform on a wide range of policy issues". While a valid index, it should be treated as such-a tool to measure change in a group of representative data. It can provide a simple metric to track but does not provide full context. 
-
-It is included in this analysis to compare the various metrics being used to asses regulatory reach. The discussion will include why metrics can only represent and should not be removed from context.
-
-Here, these metrics are reviewed and compared to other metrics created for the purpose of this analysis with idea generation and code assistance from generative AI tools (Claude/ChatGPT) which will be flagged where used. All code and data will be available open source for reproducibility and transparency.
-
-### Methods
-
-#### Regulations
-Regulations were pulled from the GovInfo.gov API. All regulations were pulled between 2012 and 2014, looking for titles of regulations, the issued date of the regulation, and a package ID used to identify regulations and their details. Once regulations were pulled, granules (details for each regulation record) were pulled to obtain the agency that produced the regulation and text for each regulation.
-
-These were saved to .csv file stored on Google Drive due to size restrictions on GitHub. The .csv was loaded into python and the following metrics were calculated:
-    - word count: count of all individual words within the full text of the regulation;
-    - bueraucractic terms: count of all terms that described bueraucratic action ("shall", "must", "require", "submit", "authorize", "comply", "prohibit", "enforce", "mandatory"; note this list is not exhaustive but representative);
-    - complexity ratio: ratio of bureuacratic terms to explanatory terms ("for the purposes of", "defined as", "background", "explains how"; note this list is not exhaustive but representative)
-
-Percent changes year over year were calculated as:
-$$
-\text{Percent Change} = \frac{year_{new} - year_{old}}{year_{old}} \times 100
-$$
-
-The next calculation was the unconstitutionality index but requires numbers of laws by year. The method for gathering these is defined next.
-
-#### Laws
-Laws were counted from Congress.gov using the search feature for "Laws" between 2012 - 2024. Under "Legislative Action", "Laws Enacted" was selected. The specific congresses were selected by their year span and the years were mapped to congressional sessions. While innaccurate, laws were split evenly by the years of the congressional sessions (divided by 2) for a quick analysis. Improvements would be to manually count for each year that laws were passed but there is currently no automated way of collecting this data.
-
-#### Unconstitutionally Index
-$$
-\text{Unconstitutionality Index} = \frac{n_{regulations}}{{n_{laws}}}
-$$
-
-### Results
-
-#### Analysis findings
-
-
-#### Comparison to DOGE results
-```{python}
-doge = pd.read_csv('regulation-data.csv', index_col=None)
 ```
 
 ### Discussion 
