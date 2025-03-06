@@ -354,10 +354,13 @@ except:
     print("DOGE data file not available for comparison")
 
 # Prepare Data for Visualization
-df_melted = df_results.unpivot(
+df_melted = df_results.melt(
     id_vars=["year"], 
     value_vars=["num_laws_passed", "num_sections"], 
-).rename({"variable": "count_type", "value": "value"})  
+    variable_name="count_type",
+    value_name="value"
+)
+ 
 
 # Convert to dictionary format (array of objects)
 df_melted_json = df_melted.to_dicts()
@@ -460,8 +463,6 @@ Plot.plot({
   ]
 })
 ```
-
-
 
 As these seemed to fall short, the next charts look at various metrics (produced with help from ChatGPT Data Analyst (4o) and Claude Sonnet 3.5) that look at things like bureaucracy, efficiency, and word counts by agency by year, as well as year over year changes. The charts can be filtered by all agencies (titles in the data).
 ```{ojs}
