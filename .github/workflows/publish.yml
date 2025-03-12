@@ -16,6 +16,11 @@ jobs:
       - name: 🚀 Checkout Repository
         uses: actions/checkout@v4
 
+      - name: 🔧 Install System Dependencies (for R packages)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libpng-dev libcurl4-openssl-dev libssl-dev libxml2-dev
+
       - name: 🔧 Set Up Python
         uses: actions/setup-python@v4
         with:
@@ -23,13 +28,13 @@ jobs:
 
       - name: 🔧 Install Python Dependencies
         run: |
-          pip install -r requirements.txt  # Ensure you have a requirements.txt file
+          pip install -r requirements.txt
           pip install polars gdown requests pandas matplotlib seaborn jupyter-cache
 
       - name: 🔧 Set Up R
         uses: r-lib/actions/setup-r@v2
         with:
-          r-version: '4.3.0'  # Ensure correct R version
+          r-version: '4.3.0'
 
       - name: 🔧 Install R Dependencies
         run: |
@@ -56,7 +61,7 @@ jobs:
       - name: 📤 Publish to GitHub Pages
         uses: actions/upload-pages-artifact@v3
         with:
-          path: "_site/"  # Upload final website for publishing
+          path: "_site/"
 
   deploy:
     needs: build
