@@ -7,6 +7,16 @@ bluesky-comments:
     enabled: true
 freeze: auto
 ---
+```{r}
+pacman::p_load(
+    'arrow',
+    'dplyr',
+    'readr',
+    'tidyr',
+    'stringr',
+    'reticulate'
+)
+```
 
 ```{python}
 #| label: set up libraries, logging, and API key
@@ -207,7 +217,7 @@ os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "credentials.json"
 gdown.download(id=file_id, output=output, quiet=False, fuzzy=True)
 
 if not os.path.exists(output) or os.path.getsize(output) == 0:
-    raise Exception("F  ile download failed! Check Google Drive permissions and authentication.")
+    raise Exception("File download failed! Check Google Drive permissions and authentication.")
 
 # Define a lazy loading strategy with chunked reading for better memory management
 try:
@@ -223,154 +233,150 @@ if isinstance(regs, pl.LazyFrame):
 else:
     regs = regs.with_columns([
         pl.col("dateIssued").str.to_date().dt.year().alias("year")
-    ]) 
-```
-
-```{python}
-#| label: ChatGPT/Claude assisted analysis
-#| cache: true
-# Define Bureaucratic & Complexity Term Functions
-bureaucratic_terms = ["shall", "must", "require", "submit", "authorize", "comply", "prohibit", "enforce", "mandatory"]
-explanatory_terms = ["for the purposes of", "defined as", "background", "explains how"]
-
-def count_bureaucratic_terms(text: str) -> int:
-    """Count occurrences of bureaucratic terms in text."""
-    return sum(len(re.findall(fr"\b{term}\b", text, re.IGNORECASE)) for term in bureaucratic_terms) if text else 0
-
-def complexity_ratio(text: str) -> float:
-    """Calculate complexity ratio based on bureaucratic vs explanatory terms."""
-    proc_count = count_bureaucratic_terms(text)
-    exp_count = sum(len(re.findall(fr"\b{term}\b", text, re.IGNORECASE)) for term in explanatory_terms) if text else 0
-    return proc_count / (exp_count + 1)  # Avoid division by zero
-
-regs = regs.with_columns([
-    pl.col("text").map_elements(count_bureaucratic_terms, return_dtype=pl.Int64).alias("bureaucratic_terms"),
-    pl.col("text").map_elements(complexity_ratio, return_dtype=pl.Float64).alias("complexity_ratio"),
-    pl.col("dateIssued").str.to_date().dt.year().alias("year"),
-    pl.when(pl.col("text").is_not_null())
-    .then(pl.col("text").str.split(" ").list.len())
-    .otherwise(0)
-    .alias("reg_word_count"),
-])
-
-# Aggregate Data by Title & Year
-grouped_regs = regs.group_by(["title", "year"]).agg([
-    pl.col("reg_word_count").sum().alias("total_word_count"),
-    pl.col("bureaucratic_terms").sum().alias("total_bureaucratic_terms"),
-    pl.col("complexity_ratio").mean().alias("avg_complexity_ratio"),
-])
-
-# Melt dataframe
-melted_regs = grouped_regs.melt( 
-    id_vars = ['title', 'year'],
-    variable_name='metric',
-    value_name='value'
-)
-```
-
-```{python}
-#| label: Calculate metrics and display results
-#| cache: true
-
-# Compute YOY Changes
-def percent_change(new, old):
-    return ((new - old) / old) * 100 if old != 0 else 0
-
-years = grouped_regs.select("year").unique().sort("year").to_series().to_list()
-analysis_results = {}
-
-for i in range(1, len(years)):
-    prev_year = years[i - 1]
-    curr_year = years[i]
-
-    prev_data = melted_regs.filter(pl.col("year") == prev_year)
-    curr_data = melted_regs.filter(pl.col("year") == curr_year)
-
-    prev_word_count = prev_data.filter(pl.col("metric") == "total_word_count")["value"].sum()
-    curr_word_count = curr_data.filter(pl.col("metric") == "total_word_count")["value"].sum()
-
-    prev_bureaucratic = prev_data.filter(pl.col("metric") == "total_bureaucratic_terms")["value"].sum()
-    curr_bureaucratic = curr_data.filter(pl.col("metric") == "total_bureaucratic_terms")["value"].sum()
-
-    prev_complexity = prev_data.filter(pl.col("metric") == "avg_complexity_ratio")["value"].mean()
-    curr_complexity = curr_data.filter(pl.col("metric") == "avg_complexity_ratio")["value"].mean()
-
-    word_growth = percent_change(curr_word_count, prev_word_count)
-    bureaucratic_change = percent_change(curr_bureaucratic, prev_bureaucratic)
-    complexity_change = percent_change(curr_complexity, prev_complexity)
-
-    efficiency_score = (bureaucratic_change + complexity_change) / (2 * word_growth) if word_growth != 0 else 0
-
-    analysis_results[curr_year] = {
-        "word_growth": word_growth,
-        "bureaucratic_change": bureaucratic_change,
-        "complexity_change": complexity_change,
-        "efficiency_score": efficiency_score
-    }
-
-df_results = pl.DataFrame(
-    [{"year": year, **metrics} for year, metrics in analysis_results.items()]
-)
-
-# Fetch Laws Passed Per Year
-congress_map = {
-    2012: [112], 2013: [113], 2014: [113],
-    2015: [114], 2016: [114],
-    2017: [115], 2018: [115],
-    2019: [116], 2020: [116],
-    2021: [117], 2022: [117],
-    2023: [118], 2024: [118]
-}
-
-laws_by_congress = {
-    112: 284, 113: 296, 114: 329, 115: 442,
-    116: 344, 117: 328, 118: 280
-}
-
-laws_by_year = {year: sum(laws_by_congress.get(congress, 0) for congress in congresses) // 2 for year, congresses in congress_map.items()}
-
-# Compute Additional Metrics
-for year in sorted(laws_by_year.keys()):
-    year_filtered = regs.filter(pl.col("year") == year)
-    num_sections = year_filtered.shape[0]  # Assuming granule count is based on number of sections
-    total_word_count = year_filtered["reg_word_count"].sum()
-    total_bureaucratic_terms = year_filtered["bureaucratic_terms"].sum()
-    num_laws_passed = laws_by_year.get(year, 1)
-    unconstitutionality = num_sections / num_laws_passed if num_laws_passed else 0
-
-    df_results = df_results.with_columns([
-        pl.lit(num_sections).alias("num_sections"),
-        pl.lit(num_laws_passed).alias("num_laws_passed"),
-        pl.lit(total_word_count).alias("total_word_count"),
-        pl.lit(total_bureaucratic_terms).alias("total_bureaucratic_terms"),
-        pl.lit(unconstitutionality).alias("unconstitutionality_index"),
     ])
 
-# Load DOGE Data for Comparison
-try:
-    doge = pl.read_csv("posts/250215-regulations/regulation-data.csv")
-    joined = df_results.join(doge, on="year", how="inner")
-except:
-    print("DOGE data file not available for comparison")
+regs_pandas = regs.to_pandas()
+```
 
-# Prepare Data for Visualization
-df_melted = df_results.melt(
-    id_vars=["year"], 
-    value_vars=["num_laws_passed", "num_sections"], 
-    variable_name="count_type",
-    value_name="value"
+```{r}
+library(reticulate)
+library(dplyr)
+library(readr)
+library(tidyr)
+library(stringr)
+
+# Access the Pandas DataFrame from Python
+regs <- py$regs_pandas
+
+# Access list of rules
+rules <- read_csv('posts/250215-regulations/federal_register_rule_counts.csv')
+
+# Access DOGE data
+doge <- read_csv(doge_data_path)
+```
+
+```{r}
+# Define bureaucratic and explanatory terms
+bureaucratic_terms <- c("shall", "must", "require", "submit", "authorize", "comply", "prohibit", "enforce", "mandatory")
+explanatory_terms <- c("for the purposes of", "defined as", "background", "explains how")
+
+# Function to count bureaucratic terms in text
+count_bureaucratic_terms <- function(text) {
+  if (is.na(text)) return(0)
+  sum(sapply(bureaucratic_terms, function(term) str_count(text, fixed(term, ignore_case = TRUE))))
+}
+
+# Function to calculate complexity ratio
+complexity_ratio <- function(text) {
+  if (is.na(text)) return(0)
+  proc_count <- count_bureaucratic_terms(text)
+  exp_count <- sum(sapply(explanatory_terms, function(term) str_count(text, fixed(term, ignore_case = TRUE))))
+  return(proc_count / (exp_count + 1))  # Avoid division by zero
+}
+
+# Ensure dateIssued column is in Date format and extract year
+regs <- regs %>%
+  mutate(
+    year = as.integer(format(as.Date(dateIssued, format = "%Y-%m-%d"), "%Y")),
+    bureaucratic_terms = sapply(text, count_bureaucratic_terms),
+    complexity_ratio = sapply(text, complexity_ratio),
+    reg_word_count = ifelse(!is.na(text), str_count(text, "\\S+"), 0)  # Count words
+  ) |>
+  ungroup()
+```
+
+```{r}
+# Aggregate data by Title & Year
+grouped_regs <- regs %>% 
+  group_by(agency, year) %>%
+  summarise(
+    num_sections = sum(granule_count, na.rm = TRUE),
+    total_word_count = sum(reg_word_count, na.rm = TRUE),
+    total_bureaucratic_terms = sum(bureaucratic_terms, na.rm = TRUE),
+    avg_complexity_ratio = mean(complexity_ratio, na.rm = TRUE),
+    .groups = "drop"
+  )
+```
+
+```{r}
+# Melt dataframe (equivalent to pivot_longer in R)
+melted_regs <- grouped_regs %>%
+  pivot_longer(cols = c(total_word_count, total_bureaucratic_terms, avg_complexity_ratio),
+               names_to = "metric",
+               values_to = "value")
+
+# Function for percentage change calculation
+percent_change <- function(new, old) {
+  if (old == 0) return(0)
+  return((new - old) / old * 100)
+}
+```
+
+```{r}
+# Laws passed per year mapping
+congress_map <- list(
+  "2012" = c(112), "2013" = c(113), "2014" = c(113),
+  "2015" = c(114), "2016" = c(114),
+  "2017" = c(115), "2018" = c(115),
+  "2019" = c(116), "2020" = c(116),
+  "2021" = c(117), "2022" = c(117),
+  "2023" = c(118), "2024" = c(118)
 )
- 
 
-# Convert to dictionary format (array of objects)
-df_melted_json = df_melted.to_dicts()
-melted_regs_json = melted_regs.to_dicts()
-yoy_json = df_results.to_dicts()
+laws_by_congress <- c(
+  "112" = 284, "113" = 296, "114" = 329, "115" = 442,
+  "116" = 344, "117" = 328, "118" = 280
+)
 
-# Send to OJS
-ojs_define(data=df_melted_json)
-ojs_define(int=melted_regs_json)
-ojs_define(yoy=yoy_json)
+# Compute laws passed per year
+laws_by_year <- sapply(names(congress_map), function(year) {
+  sum(sapply(congress_map[[year]], function(congress) laws_by_congress[as.character(congress)]), na.rm = TRUE) / 2
+}, simplify = TRUE)
+
+laws_by_year <- data.frame(year = as.integer(names(laws_by_year)), num_laws_passed = laws_by_year)
+
+# set up yearly section and word counts then join yearly laws and DOGE data
+df_sect <- grouped_regs |>
+  left_join(laws_by_year, by = 'year') |>
+  mutate(
+    unconstitutionality_index = num_sections / num_laws_passed
+  ) |>
+  left_join(doge, by = 'year') |>
+  pivot_longer(
+    cols = c('total_bureaucratic_terms', 'avg_complexity_ratio', 'total_word_count', 'num_laws_passed', 'num_sections', 'unconstitutionality_index', 'word_count', 'regulation_count'),
+    names_to = 'metric',
+    values_to = 'value'
+  )
+
+# charts
+charts <- df_sect |>
+  select(agency, year, metric, value) |>
+  mutate(year = as.character(year))
+
+# laws and rules charts
+lawrule <- laws_by_year |>
+  inner_join(rules, by = 'year') |>
+  pivot_longer(
+    cols = c('num_laws_passed', 'rule_count'),
+    names_to = 'metric',
+    values_to = 'value'
+  )
+```
+
+```{r}
+#| eval: false
+# Prepare Data for Visualization
+#df_melted <- df_results %>%
+#  pivot_longer(cols = c(word_growth, bureaucratic_change, complexity_change, efficiency_score),
+#               names_to = "metric_type",
+#               values_to = "value")
+
+```
+
+
+```{r}
+ojs_define(lawrule=lawrule)
+ojs_define(data=charts)
 ```
 
 ### Background
@@ -421,12 +427,15 @@ $$
 #### Analysis findings
 Below is the number of rules and laws by year done with the above method.
 ```{ojs}
-Plot = await import('https://cdn.jsdelivr.net/npm/@observablehq/plot@0.6.16/+esm')
+Plot = import('https://cdn.jsdelivr.net/npm/@observablehq/plot@0.6.16/+esm')
+d3 = require("d3@7")
+
+tlr = transpose(lawrule)
 
 // Ensure date formatting for visualization
-dataFormatted = data.map(d => ({...d, year: new Date(d.year, 0, 1)}))
+dataFormatted = tlr.map(d => ({...d, year: new Date(d.year, 0, 1)}))
 
-// Grouped column chart (Rules & Laws per year)
+// Grouped column chart (Rules & Laws per year per agency)
 Plot.plot({
   marginLeft: 80,
   marginBottom: 40,
@@ -434,11 +443,18 @@ Plot.plot({
   marginTop: 40,
   width: 960,
   height: 500,
-  x: {label: 'Year', tickFormat: d3.utcFormat("%Y")},
+  fx: {label: 'Year', tickFormat: d3.utcFormat("%Y")},
+  x: {axis: null, domain: ['rule_count', 'num_laws_passed']},
   y: {label: 'Count'},
-  color: {legend: true, scheme: "tableau10"},
+  color: {
+    legend: true, 
+    domain: ['num_laws_passed', 'rule_count'],
+    range: ['#345995', '#03CEA4'],
+    tickFormat: text => text.replace(/_/g, " ").replace(/^./, str => str.toUpperCase()) 
+  },
+  },
   marks: [
-    Plot.barY(dataFormatted, {x: 'year', y: 'value', fill: 'count_type', tip: true}),
+    Plot.barY(filteredData, {fx: 'year', x: 'metric', y: 'value', fill: 'metric', tip: true}),
     Plot.ruleY([0])
   ]
 })
@@ -446,7 +462,45 @@ Plot.plot({
 
 The next chart compares DOGE word counts by year to the above methods word count by year.
 ```{ojs}
-// DOGE Comparison (Word Counts vs. Sections of Regulation)
+tdata = transpose(data)
+
+// Ensure date formatting for visualization
+dataFormatted = tdata.map(d => ({...d, year: new Date(d.year, 0, 1)}))
+
+rolledUpData = Array.from(
+  d3.rollup(
+    dataFormatted, 
+    v => d3.sum(v, d => d.value), 
+    d => d.year.getTime(),  // Use timestamp for grouping
+    d => d.agency,
+    d => d.metric  // Ensure metric is maintained
+  ), 
+  ([year, agencies]) => 
+    Array.from(agencies, ([agency, metrics]) => 
+      Array.from(metrics, ([metric, value]) => ({year: new Date(year), agency, metric, value}))
+    )
+).flat(2)  // Flatten nested array structure
+
+// filter for Agency
+viewof agency = Inputs.checkbox(
+    [...new Set(rolledUpData.map(d => d.agency))],
+    {label: "Select Agencies"}
+)
+
+function formatLabel(text) {
+  return text
+    .replace(/([a-z])([A-Z])/g, "$1 $2")  // Add space between camelCase words
+    .replace(/([A-Z])([A-Z][a-z])/g, "$1 $2") // Handle uppercase sequences
+    .replace(/^./, str => str.toUpperCase()); // Capitalize first letter
+}
+
+chart1 = rolledUpData.filter(d => ['total_word_count'].includes(d.metric))
+
+chart2 = rolledUpData.filter(d => ['regulation_count', 'total_bureaucratic_terms'].includes(d.metric))
+
+chart3 = rolledUpData.filter(d => ['avg_complexity_ratio', 'unconstitutionality_index'].includes(d.metric))
+
+// line chart (word count by agency)
 Plot.plot({
   marginLeft: 80,
   marginBottom: 40,
@@ -455,10 +509,15 @@ Plot.plot({
   width: 960,
   height: 500,
   x: {label: 'Year', tickFormat: d3.utcFormat("%Y")},
-  y: {label: 'Word Count'},
-  color: {legend: true, scheme: "set2"},
+  y: {label: 'Regulatory Metric'},
+  color: {
+    domain: ["total_word_count"],
+    range: ["#EAC435"],
+    legend: true,
+    tickFormat: text => text.replace(/_/g, " ").replace(/^./, str => str.toUpperCase()) 
+  },
   marks: [
-    Plot.barY(dataFormatted, {x: 'year', y: 'value', fill: 'count_type', tip: true}),
+    Plot.line(chart1, {x: 'year', y: 'value', stroke: 'metric', tip: true}),
     Plot.ruleY([0])
   ]
 })
@@ -466,14 +525,7 @@ Plot.plot({
 
 As these seemed to fall short, the next charts look at various metrics (produced with help from ChatGPT Data Analyst (4o) and Claude Sonnet 3.5) that look at things like bureaucracy, efficiency, and word counts by agency by year, as well as year over year changes. The charts can be filtered by all agencies (titles in the data).
 ```{ojs}
-// Line Chart for Word Count by Agency over Time (With Checkboxes)
-viewof agency = Inputs.checkbox(
-    [...new Set(int.map(d => d.title))],
-    {label: "Select Agencies"}
-)
-
-filteredData = int.filter(d => agency.includes(d.title)).map(d => ({...d, year: new Date(d.year, 0, 1)}))
-
+// Grouped line chart (regulation and bureaucratic term count by agency)
 Plot.plot({
   marginLeft: 80,
   marginBottom: 40,
@@ -482,19 +534,23 @@ Plot.plot({
   width: 960,
   height: 500,
   x: {label: 'Year', tickFormat: d3.utcFormat("%Y")},
-  y: {label: 'Word Count'},
-  color: {legend: true, scheme: "category10"},
+  y: {label: 'Regulatory Metric'},
+  color: {
+    domain: ["regulation_count", "total_bureaucratic_terms"],
+    range: ["#7F8E71", "#CA1551"],
+    legend: true,
+    tickFormat: text => text.replace(/_/g, " ").replace(/^./, str => str.toUpperCase()) 
+  },
   marks: [
-    Plot.line(filteredData, {x: 'year', y: 'value', stroke: 'title', tip: true}),
+    Plot.line(chart2, {x: 'year', y: 'value', stroke: 'metric', tip: true}),
     Plot.ruleY([0])
   ]
 })
+
 ```
 
 ```{ojs}
-// YOY Change Chart (Comparison of Word Growth, Bureaucratic Change, Complexity Change)
-yoyFormatted = yoy.map(d => ({...d, year: new Date(d.year, 0, 1)}))
-
+// Grouped line chart (complexity and unconstitutionality index by agency)
 Plot.plot({
   marginLeft: 80,
   marginBottom: 40,
@@ -503,12 +559,15 @@ Plot.plot({
   width: 960,
   height: 500,
   x: {label: 'Year', tickFormat: d3.utcFormat("%Y")},
-  y: {label: 'Percent Change'},
-  color: {legend: true, scheme: "dark2"},
+  y: {label: 'Regulatory Metric'},
+  color: {
+    domain: ["avg_complexity_ratio", "unconstitutionality_index"],
+    range: ["#1C949D", "#FB4D3D"],
+    legend: true,
+    tickFormat: text => text.replace(/_/g, " ").replace(/^./, str => str.toUpperCase()) 
+  },
   marks: [
-    Plot.line(yoyFormatted, {x: 'year', y: 'word_growth', stroke: 'Word Growth', tip: true}),
-    Plot.line(yoyFormatted, {x: 'year', y: 'bureaucratic_change', stroke: 'Bureaucratic Change', tip: true}),
-    Plot.line(yoyFormatted, {x: 'year', y: 'complexity_change', stroke: 'Complexity Change', tip: true}),
+    Plot.line(chart3, {x: 'year', y: 'value', stroke: 'metric', tip: true}),
     Plot.ruleY([0])
   ]
 })

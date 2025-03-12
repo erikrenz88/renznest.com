@@ -63,3 +63,5 @@ posts/250215-regulations/index.quarto_ipynb
 quarto_ipynb
 pythonindex.qmd
 !regulation-data.csv
+!federal_register_rule_counts.csv
+test.qmd
