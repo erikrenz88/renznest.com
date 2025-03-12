@@ -335,15 +335,28 @@ laws_by_year <- sapply(names(congress_map), function(year) {
 
 laws_by_year <- data.frame(year = as.integer(names(laws_by_year)), num_laws_passed = laws_by_year)
 
+# load DOGE data
+doge_data_path <- "posts/250215-regulations/regulation-data.csv"
+
+if (file.exists(doge_data_path)) {
+   doge <- read_csv(doge_data_path)
+#  df_results <- df_results %>%
+#   inner_join(doge, by = "year")
+ } else {  
+   print("DOGE data file not available for comparison")
+}
+
 # set up yearly section and word counts then join yearly laws and DOGE data
 df_sect <- grouped_regs |>
   left_join(laws_by_year, by = 'year') |>
+  left_join(rules, by = 'year') |>
   mutate(
-    unconstitutionality_index = num_sections / num_laws_passed
+    unconstitutionality_index = rule_count / num_laws_passed
   ) |>
   left_join(doge, by = 'year') |>
+  rename(DOGE_word_count = word_count) |>
   pivot_longer(
-    cols = c('total_bureaucratic_terms', 'avg_complexity_ratio', 'total_word_count', 'num_laws_passed', 'num_sections', 'unconstitutionality_index', 'word_count', 'regulation_count'),
+    cols = c('total_bureaucratic_terms', 'avg_complexity_ratio', 'total_word_count', 'rule_count', 'num_laws_passed', 'num_sections', 'unconstitutionality_index', 'DOGE_word_count', 'regulation_count'),
     names_to = 'metric',
     values_to = 'value'
   )
@@ -361,6 +374,9 @@ lawrule <- laws_by_year |>
     names_to = 'metric',
     values_to = 'value'
   )
+
+ojs_define(lawrule = lawrule)
+ojs_define(data = charts)
 ```
 
 ```{r}
@@ -371,12 +387,6 @@ lawrule <- laws_by_year |>
 #               names_to = "metric_type",
 #               values_to = "value")
 
-```
-
-
-```{r}
-ojs_define(lawrule=lawrule)
-ojs_define(data=charts)
 ```
 
 ### Background
@@ -461,6 +471,9 @@ Plot.plot({
 
 The next chart compares DOGE word counts by year to the above methods word count by year.
 ```{ojs}
+//| echo: false 
+//| warning: false 
+//| message: false 
 tdata = transpose(data)
 
 // Ensure date formatting for visualization
@@ -480,26 +493,25 @@ rolledUpData = Array.from(
     )
 ).flat(2)  // Flatten nested array structure
 
-// filter for Agency
-viewof agency = Inputs.checkbox(
-    [...new Set(rolledUpData.map(d => d.agency))],
-    {label: "Select Agencies"}
+// get unique Agencies
+uniqueAgencies = [...new Set(rolledUpData.map(d => d.agency))];
+uniqueAgencies.unshift('All')
+
+// Checkbox input for agency selection
+viewof agency = Inputs.checkbox(uniqueAgencies, {
+    label: "Select Agencies",
+    value: ["All"]  // Default to selecting all
+})
+
+filtered = rolledUpData.filter(d => 
+  agency.includes('All') || agency.includes(d.agency)
 )
 
-function formatLabel(text) {
-  return text
-    .replace(/([a-z])([A-Z])/g, "$1 $2")  // Add space between camelCase words
-    .replace(/([A-Z])([A-Z][a-z])/g, "$1 $2") // Handle uppercase sequences
-    .replace(/^./, str => str.toUpperCase()); // Capitalize first letter
-}
+chart1 = filtered.filter(d => ['total_word_count', 'DOGE_word_count'].includes(d.metric))
 
-chart1 = rolledUpData.filter(d => ['total_word_count'].includes(d.metric))
+chart2 = filtered.filter(d => ['avg_complexity_ratio', 'unconstitutionality_index'].includes(d.metric))                    
 
-chart2 = rolledUpData.filter(d => ['regulation_count', 'total_bureaucratic_terms'].includes(d.metric))
-
-chart3 = rolledUpData.filter(d => ['avg_complexity_ratio', 'unconstitutionality_index'].includes(d.metric))
-
-// line chart (word count by agency)
+// bar chart (word count by agency)
 Plot.plot({
   marginLeft: 80,
   marginBottom: 40,
@@ -507,46 +519,23 @@ Plot.plot({
   marginTop: 40,
   width: 960,
   height: 500,
-  x: {label: 'Year', tickFormat: d3.utcFormat("%Y")},
+  fx: {label: 'Year', tickFormat: d3.utcFormat("%Y")},
+  x: {axis: null, label: 'Year', tickFormat: d3.utcFormat("%Y")},
   y: {label: 'Regulatory Metric'},
   color: {
-    domain: ["total_word_count"],
-    range: ["#EAC435"],
+    domain: ["total_word_count", "DOGE_word_count"],
+    range: ["#EAC435", "#345995"],
     legend: true,
     tickFormat: text => text.replace(/_/g, " ").replace(/^./, str => str.toUpperCase()) 
   },
   marks: [
-    Plot.line(chart1, {x: 'year', y: 'value', stroke: 'metric', tip: true}),
+    Plot.barY(chart1, {fx: 'year', x: 'metric', y: 'value', fill: 'metric', tip: true}),
     Plot.ruleY([0])
   ]
 })
 ```
 
 As these seemed to fall short, the next charts look at various metrics (produced with help from ChatGPT Data Analyst (4o) and Claude Sonnet 3.5) that look at things like bureaucracy, efficiency, and word counts by agency by year, as well as year over year changes. The charts can be filtered by all agencies (titles in the data).
-```{ojs}
-// Grouped line chart (regulation and bureaucratic term count by agency)
-Plot.plot({
-  marginLeft: 80,
-  marginBottom: 40,
-  marginRight: 80,
-  marginTop: 40,
-  width: 960,
-  height: 500,
-  x: {label: 'Year', tickFormat: d3.utcFormat("%Y")},
-  y: {label: 'Regulatory Metric'},
-  color: {
-    domain: ["regulation_count", "total_bureaucratic_terms"],
-    range: ["#7F8E71", "#CA1551"],
-    legend: true,
-    tickFormat: text => text.replace(/_/g, " ").replace(/^./, str => str.toUpperCase()) 
-  },
-  marks: [
-    Plot.line(chart2, {x: 'year', y: 'value', stroke: 'metric', tip: true}),
-    Plot.ruleY([0])
-  ]
-})
-
-```
 
 ```{ojs}
 // Grouped line chart (complexity and unconstitutionality index by agency)
@@ -566,7 +555,7 @@ Plot.plot({
     tickFormat: text => text.replace(/_/g, " ").replace(/^./, str => str.toUpperCase()) 
   },
   marks: [
-    Plot.line(chart3, {x: 'year', y: 'value', stroke: 'metric', tip: true}),
+    Plot.line(chart2, {x: 'year', y: 'value', stroke: 'metric', tip: true}),
     Plot.ruleY([0])
   ]
 })
