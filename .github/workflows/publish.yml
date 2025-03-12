@@ -33,7 +33,7 @@ jobs:
 
       - name: 🔧 Install R Dependencies
         run: |
-          Rscript -e 'install.packages(c("httr", "jsonlite", "readr", "dplyr", "lubridate", "tidyr", "knitr", "rmarkdown", "stringr", "reticulate"))'
+          Rscript -e 'install.packages(c("pacman", "httr", "jsonlite", "readr", "dplyr", "lubridate", "tidyr", "knitr", "rmarkdown", "stringr", "reticulate"))'
 
       - name: 🔧 Install Quarto 1.6+
         run: |
