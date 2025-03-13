@@ -6,7 +6,7 @@ on:
       - main
   schedule:
     - cron: "0 6 * * *"  # Runs daily at 6 AM UTC
-  workflow_dispatch:  # Allows manual execution
+  workflow_dispatch:  # Allows manual execution (force rebuild)
 
 jobs:
   build:
@@ -16,13 +16,32 @@ jobs:
       - name: 🚀 Checkout Repository
         uses: actions/checkout@v4
 
+      - name: 🔍 Retrieve Previously Built _site (if exists)
+        uses: actions/download-artifact@v4  # ✅ FIXED
+        with:
+          name: github-pages
+          path: _site_previous
+        continue-on-error: true  # Don't fail if no previous artifact exists
+
+      - name: 🛠 Ensure _site Exists
+        run: mkdir -p _site
+
       - name: 🔍 Check for Changes in Blog Content
         id: changes
         run: |
-          git fetch origin main
-          CHANGED_FILES=$(git diff --name-only HEAD^ HEAD)
+          git fetch --no-tags --prune --depth=2 origin main || true
+          CHANGED_FILES=$(git diff --name-only HEAD^ HEAD 2>/dev/null || git diff --name-only HEAD)
           echo "CHANGED_FILES=$CHANGED_FILES" >> $GITHUB_ENV
           echo "Changed files: $CHANGED_FILES"
+
+      - name: 🔍 Check if _site/ Exists
+        id: check_site
+        run: |
+          if [ -d "_site_previous" ]; then
+            echo "SITE_EXISTS=true" >> $GITHUB_ENV
+          else
+            echo "SITE_EXISTS=false" >> $GITHUB_ENV
+          fi
 
       - name: 🔧 Install System Dependencies (for R packages)
         run: |
@@ -46,8 +65,15 @@ jobs:
 
       - name: 🔧 Install R Dependencies
         run: |
-          Rscript -e 'install.packages(c("pacman", "httr", "jsonlite", "readr", "dplyr", "lubridate", "tidyr", "knitr", "rmarkdown", "stringr", "reticulate"))'
-          Rscript -e 'library(reticulate); use_python(Sys.which("python3"), required=TRUE); py_install(scan("requirements.txt", what="character"), pip=TRUE)'
+          Rscript -e '
+            install.packages(c("pacman", "httr", "jsonlite", "readr", "dplyr", "lubridate", "tidyr", "knitr", "rmarkdown", "stringr", "reticulate"))
+            library(reticulate)
+            use_python(Sys.which("python3"), required=TRUE)
+            reqs <- readLines("requirements.txt")
+            reqs <- reqs[!grepl("^\\s*#", reqs)]
+            reqs <- reqs[reqs != ""]
+            py_install(reqs, pip=TRUE)
+          '
 
       - name: 🔧 Install Quarto 1.6+
         run: |
@@ -55,11 +81,21 @@ jobs:
           sudo dpkg -i quarto.deb
           quarto check
 
-      - name: 🏗 Build Quarto Website (Only If Necessary)
-        if: contains(env.CHANGED_FILES, '.qmd') || contains(env.CHANGED_FILES, 'posts/') || contains(env.CHANGED_FILES, 'data/')
+      - name: 🏗 Build Quarto Website (Force Rebuild If Needed)
+        if: github.event_name == 'workflow_dispatch' || env.SITE_EXISTS == 'false' || contains(env.CHANGED_FILES, '.qmd') || contains(env.CHANGED_FILES, 'posts/') || contains(env.CHANGED_FILES, 'data/')
         uses: quarto-dev/quarto-actions/render@v2
 
-      - name: 📤 Publish to GitHub Pages
+      - name: 🔀 Merge Old and New _site
+        run: rsync -a _site_previous/ _site/ || true
+
+      - name: 🚨 Check _site Exists Before Upload
+        run: |
+          if [ ! -d "_site" ]; then
+            echo "⚠️ Warning: No changes detected, and _site does not exist. Skipping deployment."
+            exit 0
+          fi
+
+      - name: 📤 Upload _site for Deployment
         uses: actions/upload-pages-artifact@v3
         with:
           path: "_site/"
