@@ -7,16 +7,6 @@ bluesky-comments:
     enabled: true
 freeze: auto
 ---
-```{r}
-pacman::p_load(
-    'arrow',
-    'dplyr',
-    'readr',
-    'tidyr',
-    'stringr',
-    'reticulate'
-)
-```
 
 ```{python}
 #| label: set up libraries, logging, and API key
@@ -200,44 +190,6 @@ def process_regulation_data(input_file="cfr_regulations.csv", output_file="full_
 # process_regulation_data()  # Retrieves granules & text, saves to a new CSV
 ```
 
-```{python}
-#| label: import csv and complete counts
-#| cache: true
-# Check if the file already exists to avoid re-downloading
-file_id = "1Re-xRy9d3jZmWOVjvC4uwyi8UChxzUIY"
-output = "large_file.csv"
-
-# Set up authentication from GitHub Secrets
-os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "credentials.json"
-
-# local dev: load in full_regulations.csv
-# regs = pl.read_csv('full_regulations.csv')
-
-# Use gdown with credentials
-gdown.download(id=file_id, output=output, quiet=False, fuzzy=True)
-
-if not os.path.exists(output) or os.path.getsize(output) == 0:
-    raise Exception("File download failed! Check Google Drive permissions and authentication.")
-
-# Define a lazy loading strategy with chunked reading for better memory management
-try:
-    regs = pl.scan_csv(output).collect()
-except Exception as e:
-    raise RuntimeError(f"Failed to read CSV file: {e}")
-
-# Process and collect only necessary columns
-if isinstance(regs, pl.LazyFrame):  
-    regs = regs.with_columns([
-        pl.col("dateIssued").str.to_date().dt.year().alias("year")
-    ]).collect() 
-else:
-    regs = regs.with_columns([
-        pl.col("dateIssued").str.to_date().dt.year().alias("year")
-    ])
-
-regs_pandas = regs.to_pandas()
-```
-
 ```{r}
 library(reticulate)
 library(dplyr)
@@ -245,8 +197,14 @@ library(readr)
 library(tidyr)
 library(stringr)
 
-# Access the Pandas DataFrame from Python
-regs <- py$regs_pandas
+# Download file from Google drive if not available
+use_python(Sys.which("python3"), required=TRUE)
+gdown <- import("gdown")
+
+# File download only if missing
+if (!file.exists("data.csv")) {
+  gdown$download(id = "1Re-xRy9d3jZmWOVjvC4uwyi8UChxzUIY", output = "data.csv", fuzzy = TRUE)
+}
 
 # Access list of rules
 rules <- read_csv('posts/250215-regulations/federal_register_rule_counts.csv')
@@ -427,12 +385,11 @@ ojs_define(yoy = df_melted)
 ```
 
 ```{r}
-#| eval: false
 # Prepare Data for Visualization
-#df_melted <- df_results %>%
-#  pivot_longer(cols = c(word_growth, bureaucratic_change, complexity_change, efficiency_score),
-#               names_to = "metric_type",
-#               values_to = "value")
+df_melted <- df_results %>%
+  pivot_longer(cols = c(word_growth, bureaucratic_change, complexity_change, efficiency_score),
+               names_to = "metric_type",
+               values_to = "value")
 
 ```
 
