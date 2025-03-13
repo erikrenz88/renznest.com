@@ -313,6 +313,46 @@ percent_change <- function(new, old) {
 ```
 
 ```{r}
+# Compute Year-over-Year Changes
+years <- sort(unique(grouped_regs$year))
+analysis_results <- list()
+
+for (i in 2:length(years)) {
+  prev_year <- years[i - 1]
+  curr_year <- years[i]
+
+  prev_data <- filter(melted_regs, year == prev_year)
+  curr_data <- filter(melted_regs, year == curr_year)
+
+  prev_word_count <- sum(filter(prev_data, metric == "total_word_count")$value, na.rm = TRUE)
+  curr_word_count <- sum(filter(curr_data, metric == "total_word_count")$value, na.rm = TRUE)
+
+  prev_bureaucratic <- sum(filter(prev_data, metric == "total_bureaucratic_terms")$value, na.rm = TRUE)
+  curr_bureaucratic <- sum(filter(curr_data, metric == "total_bureaucratic_terms")$value, na.rm = TRUE)
+
+  prev_complexity <- mean(filter(prev_data, metric == "avg_complexity_ratio")$value, na.rm = TRUE)
+  curr_complexity <- mean(filter(curr_data, metric == "avg_complexity_ratio")$value, na.rm = TRUE)
+
+  word_growth <- percent_change(curr_word_count, prev_word_count)
+  bureaucratic_change <- percent_change(curr_bureaucratic, prev_bureaucratic)
+  complexity_change <- percent_change(curr_complexity, prev_complexity)
+
+  efficiency_score <- ifelse(word_growth != 0, (bureaucratic_change + complexity_change) / (2 * word_growth), 0)
+
+  analysis_results[[as.character(curr_year)]] <- data.frame(
+    year = curr_year,
+    word_growth = word_growth,
+    bureaucratic_change = bureaucratic_change,
+    complexity_change = complexity_change,
+    efficiency_score = efficiency_score
+  )
+}
+
+# Convert list to DataFrame
+df_results <- bind_rows(analysis_results)
+```
+
+```{r}
 # Laws passed per year mapping
 congress_map <- list(
   "2012" = c(112), "2013" = c(113), "2014" = c(113),
@@ -375,8 +415,15 @@ lawrule <- laws_by_year |>
     values_to = 'value'
   )
 
+# Prepare Data for Visualization
+df_melted <- df_results %>%
+  pivot_longer(cols = c(word_growth, bureaucratic_change, complexity_change, efficiency_score),
+               names_to = "metric",
+               values_to = "value")
+
 ojs_define(lawrule = lawrule)
 ojs_define(data = charts)
+ojs_define(yoy = df_melted)
 ```
 
 ```{r}
@@ -389,6 +436,14 @@ ojs_define(data = charts)
 
 ```
 
+::: {.callout-note title='TL;DR'}
+* DOGE is working to create efficiency in savings and regulations
+* An open and transparent analysis was conducted alongside the "transparent" DOGE analysis, which did not align
+* The DOGE regulatory analysis focuses solely on word count and regulation count without any underlying context like complexity of the issue regulated or the use of langauge within a regulation
+* The analysis shows poor understanding of analytics and laziness in providing appropriate context and due dillignece before making extreme and rapid changes that impact millions
+* Next time, do better DOGE... and stop making me go to X so your "special governemnt employee" can boost his price per share. To be clear: your analysis isn't worth the $/mo, or the tissue I blew my nose in.
+:::
+
 ### Background
 The Department of Government Efficiency (laughably/ironically/disrespectfully, [DOGE](https://en.wikipedia.org/wiki/Doge_(meme))) was created by [Exeutive Order](https://www.whitehouse.gov/presidential-actions/2025/01/establishing-and-implementing-the-presidents-department-of-government-efficiency/) on Jan. 20 2025. The purpose is defined as:
 > "This Executive Order establishes the Department of Government Efficiency to implement the President’s DOGE Agenda, by modernizing Federal technology and software to maximize governmental efficiency and productivity."
@@ -396,7 +451,7 @@ The Department of Government Efficiency (laughably/ironically/disrespectfully, [
 Currently, there is ambiguity as to the DOGE administrator as shown in the various sources and quotes in the [Wikipedia article](https://en.wikipedia.org/wiki/Department_of_Government_Efficiency#:~:text=President%20Donald%20Trump%20confirmed%20Elon,required%20of%20full%20time%20employees.):
 > "Trump has said that businessman Elon Musk is "in charge" of DOGE, but the White House has denied that Musk is a DOGE administrator or DOGE employee,[9][2][10] and said Musk "has no actual or formal authority to make government decisions"."
 
-The contracted organization-the true status of the organization, not actually a department of the U.S. government-released the first version of their website recently (Feb. 12 2025) attempting to make their effiency findings transparent through monies saved and an assessment of bueraucractic overreach. Many reports of the flaws in their savings analyses have been publicized but a concerning set of analysis is their regulations page.
+The contracted organization-the true status of the organization, not actually a department of the U.S. government-released the first version of their website recently (Feb. 12 2025) attempting to make their effiency findings transparent through monies saved and an assessment of bueraucractic overreach. Many reports of the flaws in their savings analyses have been publicized but a concerning set of analysis is their regulations page which comes into focus with the [latest changes to DOGE's vision](https://www.whitehouse.gov/presidential-actions/2025/02/ensuring-lawful-governance-and-implementing-the-presidents-department-of-government-efficiency-regulatory-initiative/).
 
 Seemingly, the purpose of the page is to look at the amount of regulation (rules from agencies not created by congress) compared to the laws passed by Congress. That is to say there is more government rule making than congressional (representing the people's interests). The main metrics used are word counts by agency and year, and the Unconstitutionality Index.
 
@@ -410,6 +465,8 @@ Here, these metrics are reviewed and compared to other metrics created for the p
 ### Methods
 
 #### Regulations
+Regulations are agency-created rules. These are not strictly voted on by the public and are seen by some as bureacuracy or government overreach. A counter point is that elected officials (the President, Congress) nominate and hold hearings to confirm these appointed positions (heads of the agencies) who in turn hire individuals they feel fit the qualifications - not voted on our citizen drawn up rules, but certainly reflective of the elected officials and within the expertise of those that fit the role.
+
 Regulations were pulled from the GovInfo.gov API. All regulations were pulled between 2012 and 2014, looking for titles of regulations, the issued date of the regulation, and a package ID used to identify regulations and their details. Once regulations were pulled, granules (details for each regulation record) were pulled to obtain the agency that produced the regulation and text for each regulation.
 
 These were saved to .csv file stored on Google Drive due to size restrictions on GitHub. The .csv was loaded into python and the following metrics were calculated:
@@ -425,6 +482,8 @@ $$
 The next calculation was the unconstitutionality index but requires numbers of laws by year. The method for gathering these is defined next.
 
 #### Laws
+Laws are federal laws that are voted on within the House and Senate. These are seen to be less government overreach and more reflective of the populations desires. To provide a counter point here, the elected officials may speak to their parties by addressing their concerns and promising to uphold those in Congress, but could vote against those concerns or be lobbied in direction that suits the few instad of the many.
+
 Laws were counted from Congress.gov using the search feature for "Laws" between 2012 - 2024. Under "Legislative Action", "Laws Enacted" was selected. The specific congresses were selected by their year span and the years were mapped to congressional sessions. While innaccurate, laws were split evenly by the years of the congressional sessions (divided by 2) for a quick analysis. Improvements would be to manually count for each year that laws were passed but there is currently no automated way of collecting this data.
 
 #### Unconstitutionally Index
@@ -469,7 +528,13 @@ Plot.plot({
 })
 ```
 
-The next chart compares DOGE word counts by year to the above methods word count by year.
+There are already discrepancies in the numbers between this analysis and those posted on DOGE. It was difficult to find accurate numbers as there are multiple ways to pull this information and there is not a tidy record of laws by year. DOGE did not provide how they arrived at their numbers, only where the numbers were found. In this analysis, the same source was used but the methods for arriving at the final numbers obviously vary.
+
+In looking at the overall trend, law creation is somewhat stable, while regulations are lower, in total, than they were 12 years ago.
+
+The next chart compares DOGE word counts by year to the above methods word count by year. Due to lack of transparency, it is unclear whether they are using the Code of Federal Regulations (CFR/eCFR) or the Federal Register for calculating words. It is also unclear which area of the regulation that they are counting words.
+
+The method to pull this information quickly and efficiently with some code uses many fields that require a grasp of the definitions for each field and its intended use. For the purpose of this analysis, the "text" field from the eCFR/CFR was used, ignoring anything but the body text of the regulation.
 ```{ojs}
 //| echo: false 
 //| warning: false 
@@ -535,7 +600,9 @@ Plot.plot({
 })
 ```
 
-As these seemed to fall short, the next charts look at various metrics (produced with help from ChatGPT Data Analyst (4o) and Claude Sonnet 3.5) that look at things like bureaucracy, efficiency, and word counts by agency by year, as well as year over year changes. The charts can be filtered by all agencies (titles in the data).
+It is clear to see that the word counts by DOGE's team are greater than this analysis and calls into question what the methodology was to better understanding the word counts.
+
+But word count alone falls short of a definition of bueruacracy, so the next charts look at various metrics (produced with help from ChatGPT Data Analyst (4o) and Claude Sonnet 3.5) that look at things like bureaucracy, efficiency, and word counts by agency by year, as well as year over year changes. The charts can be filtered by all agencies.
 
 ```{ojs}
 // Grouped line chart (complexity and unconstitutionality index by agency)
@@ -561,15 +628,90 @@ Plot.plot({
 })
 ```
 
+The above chart looks specifically at the average complexity ratio which looks to measure regulation complexity. This is defined as:
+
+$$
+\text {Complexity Ratio} = \frac{Words_{Bureaucratic}}{{Words_{Explanatory} + 1}}
+$$
+
+In the analysis, the text is searched for the following bureuacratic terms (terms that evoke an action):
+* shall
+* must
+* require
+* submit
+* authorize
+* comply
+* prohibit
+* enforce
+* mandatory
+
+Any words that match these in the text are counted and then divided by explanatory terms (terms that explain what is happening):
+* "for the purposes of"
+* "defined as"
+* "background"
+* "explains how"
+
+These words do not provide a regulation but add word count with the assumption that they explain and are "less efficient". Obviously, an imperfect metric, but provides more context to how complex regulations can become and how efficient each regulation is with its words as opposed to simple word counts. The one is added to the sum of all matching explanatory words/phrases to ensure there is no division by zero errors. The efficiency ratio is then averaged by year for an agency.
+
+The unconstitutionality index is shown with the complexity ratio for comparison. You can see that regulations are more complex and have more variance, but the "unconsitutionality" looks similar throughout the 12 year span.
+
+```{ojs}
+tyoy = transpose(yoy)
+
+fyoy = tyoy.map(d => ({...d, year: new Date(d.year, 0, 1)}))
+
+// Grouped line chart (complexity and unconstitutionality index by agency)
+Plot.plot({
+  marginLeft: 80,
+  marginBottom: 40,
+  marginRight: 80,
+  marginTop: 40,
+  width: 960,
+  height: 500,
+  x: {label: 'Year', tickFormat: d3.utcFormat("%Y")},
+  y: {label: 'Metrics'},
+  color: {
+    scheme: 'dark2',
+    legend: true,
+    tickFormat: text => text.replace(/_/g, " ").replace(/^./, str => str.toUpperCase()) 
+  },
+  marks: [
+    Plot.line(fyoy, {x: 'year', y: 'value', stroke: 'metric', tip: true}),
+    Plot.ruleY([0])
+  ]
+})
+```
+
+The final chart shows calculations of the year over year change in the number of bureaucratic terms (see above list), the change in complexity (see above definition of complexity ratio, this is the change in the average year over year), the change in word counts, and a calculated efficiency score to find how "efficient" the regulatory text is, defined as:
+
+$$
+\text {Efficiency Score} = \frac{\Delta_{bureaucractic} + \Delta_{complexity}}{2 \times \Delta_{words}}
+$$
+
+In other words, is the change in bureacracy plus the change in the regulatory complexity more or less than the change in words, or, if there's more words, there needs to be more complexity inside the bureaucratic terms to amke it an "efficient" rule, thereby giving valid reason for the increase in words.
+
+The chart shows that through there is fluctuation depending on the year and administration, but the efficiency score is consistent over the 12 year period.
+
 ### Discussion 
 
 #### Importance of context
+My biggest issue with this analysis by the DOGE team is it does not take any context into account. These agencies are highly specialized in their knowledge and, for most of the worker bees in these agencies, I am willing to bet are not acting maliciously to siphon money from the government (and certainly not in the quantities that say, government contractors might... looking at you McKinsey because others have not been brought to court yet and I believe in due process...).
 
+Another contextual consideration is the amount of complexity changing over time. As huamnity progresses, we discover new technologies, and a select few find new ways to cheat. The agencies are producing regulations to guide and combat these, respectively.
+
+If this is absent from the analysis (which it clearly is when DOGE is only touting humongous numbers without context to blow an issue out of proportion... how am I supposed to know what a good baseline for sections or word counts should be if there is no context to define?), then you are either a very green analyst who needs their work checked, or you are not trying to actually tell an honest story, just a sensationalized story.
+
+A specific example from the above is the number of laws to number of rules comarpison. There are a number of factors that go into both of these counts. For brevity, take the example of laws: they are passed through Congress. If there are delays to sessions or more partisan bickering, fewer laws get passed. Raw numbers alone do not provide an accurate representation. Also, one law can take a lot of time to pass (e.g. the Affordable Care Act is one law. I don't have a word count, but its 906 pages, so we can assume quite a few words.) Sometimes the reason for more words is to be thorough, not bureaucratic. Can there be efficencies? Sure. But that's not where the DOGE regulations page is aiming.
 
 #### Importance of transparency
+I'll cede, DOGE did post sources... sparingly. I will add that these sources are noted at the bottom with no ties back to the text or charts that are using them; furthermore, if you download the data behind the charts, there is a tidy file that shows years and counts. If you look at the githbu repo for this blog post, you can view the python code that pulls the CFR/eCFR data and you can quickly see that it is not a simple table pulled, nice and tidy, by year and word count.
 
+While they make the bare minimum attempt to be transparent, there is clearly a lack of transparency, just enough to tick a box but not enough for a reproducibility exercise. If you want to be transparent and open to dsicussion about a topic, you include your work and sources. If you want to placate and weave Rumpelstiltskin type thread of golden garbage, you leave everything out.
 
 #### Lack of expertise
+On the topic of transparency, we don't know all of the lovely individuals working in DOGE. But given the timing of the website release and the [news that was present at the time](https://projects.propublica.org/elon-musk-doge-tracker/), the *software engineers* they hired with, from what I could tell, no real-world data experience, are not capable of producing any quality analysis.
 
+If you are going to do the job, do the job right. Before you can be efficient, you have to understand what's going on in full. That's what an analyst does - collects the data, intergates it, tells the story, and makes recommendations. Speaking as an analyst, this is sloppy, unprofessional, and a bit offensive (and I'm a white Christian heterosexual male so no DEI comments, thanks).
 
 ### Conclusion
+Ultimately, there probably is work to reduce inefficiencies in regulation but I can confidently say the way that DOGE is conducting it is **not** the way to do it. This is a mess that is aimed to blindside people with large numbers, get them mad at government protocols, and stop questioning DOGE methods. I'm fairly certain the "special government employee" maybe-not-leading-but-authority-figure works off the "first principles" philosophy of approaching a problem which would require better understanding of the first step before gutting it. In short, shape up DOGE. You're being paid far too much and hurtig far too many to being doing such a bad job.
