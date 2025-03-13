@@ -46,9 +46,18 @@ jobs:
 
       - name: 🔧 Install R Dependencies
         run: |
-          Rscript -e 'install.packages(c("pacman", "httr", "jsonlite", "readr", "dplyr", "lubridate", "tidyr", "knitr", "rmarkdown", "stringr", "reticulate"))'
-          Rscript -e 'library(reticulate); use_python(Sys.which("python3"), required=TRUE); py_install(scan("requirements.txt", what="character"), pip=TRUE)'
+          Rscript -e '
+            install.packages(c("pacman", "httr", "jsonlite", "readr", "dplyr", "lubridate", "tidyr", "knitr", "rmarkdown", "stringr", "reticulate"))
+            library(reticulate)
+            use_python(Sys.which("python3"), required=TRUE)
 
+            # Read requirements.txt, remove comments, and pass valid package names to py_install
+            reqs <- readLines("requirements.txt")
+            reqs <- reqs[!grepl("^\\s*#", reqs)]  # Remove lines that start with "#"
+            reqs <- reqs[reqs != ""]  # Remove empty lines
+            py_install(reqs, pip=TRUE)
+          '
+          
       - name: 🔧 Install Quarto 1.6+
         run: |
           wget -qO- https://quarto.org/download/latest/quarto-linux-amd64.deb > quarto.deb
