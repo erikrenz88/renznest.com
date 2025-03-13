@@ -197,6 +197,11 @@ library(readr)
 library(tidyr)
 library(stringr)
 
+# download local .csv files first
+rules <- read_csv(here::here('posts/250215-regulations/federal_register_rule_counts.csv'))
+doge <- read_csv(here::here('posts/250215-regulations/regulation-data.csv'))
+
+
 # Download file from Google drive if not available
 use_python(Sys.which("python3"), required=TRUE)
 gdown <- import("gdown")
@@ -205,12 +210,6 @@ gdown <- import("gdown")
 if (!file.exists("data.csv")) {
   gdown$download(id = "1Re-xRy9d3jZmWOVjvC4uwyi8UChxzUIY", output = "data.csv", fuzzy = TRUE)
 }
-
-# Access list of rules
-rules <- read_csv('posts/250215-regulations/federal_register_rule_counts.csv')
-
-# Access DOGE data
-doge <- read_csv(doge_data_path)
 ```
 
 ```{r}
