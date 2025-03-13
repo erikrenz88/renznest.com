@@ -6,7 +6,7 @@ on:
       - main
   schedule:
     - cron: "0 6 * * *"  # Runs daily at 6 AM UTC
-  workflow_dispatch:  # Allows manual execution
+  workflow_dispatch:
 
 jobs:
   build:
@@ -15,6 +15,16 @@ jobs:
     steps:
       - name: 🚀 Checkout Repository
         uses: actions/checkout@v4
+
+      - name: 🔍 Retrieve Previously Built _site (if exists)
+        uses: actions/download-artifact@v3
+        with:
+          name: github-pages
+          path: _site_previous
+        continue-on-error: true  # Don't fail if no previous artifact exists
+
+      - name: 🛠 Ensure _site Exists
+        run: mkdir -p _site
 
       - name: 🔍 Check for Changes in Blog Content
         id: changes
@@ -50,14 +60,12 @@ jobs:
             install.packages(c("pacman", "httr", "jsonlite", "readr", "dplyr", "lubridate", "tidyr", "knitr", "rmarkdown", "stringr", "reticulate"))
             library(reticulate)
             use_python(Sys.which("python3"), required=TRUE)
-
-            # Read requirements.txt, remove comments, and pass valid package names to py_install
             reqs <- readLines("requirements.txt")
-            reqs <- reqs[!grepl("^\\s*#", reqs)]  # Remove lines that start with "#"
-            reqs <- reqs[reqs != ""]  # Remove empty lines
+            reqs <- reqs[!grepl("^\\s*#", reqs)]
+            reqs <- reqs[reqs != ""]
             py_install(reqs, pip=TRUE)
           '
-          
+
       - name: 🔧 Install Quarto 1.6+
         run: |
           wget -qO- https://quarto.org/download/latest/quarto-linux-amd64.deb > quarto.deb
@@ -65,10 +73,20 @@ jobs:
           quarto check
 
       - name: 🏗 Build Quarto Website (Only If Necessary)
-        if: contains(env.CHANGED_FILES, '.qmd') || contains(env.CHANGED_FILES, 'posts/') || contains(env.CHANGED_FILES, 'data/')
+        if: contains(env.CHANGED_FILES, '.qmd') || contains(env.CHANGED_FILES, 'posts/') || contains(env.CHANGED_FILES, 'data/') || ! (test -d _site)
         uses: quarto-dev/quarto-actions/render@v2
 
-      - name: 📤 Publish to GitHub Pages
+      - name: 🔀 Merge Old and New _site
+        run: rsync -a _site_previous/ _site/ || true
+
+      - name: 🚨 Check _site Exists Before Upload
+        run: |
+          if [ ! -d "_site" ]; then
+            echo "⚠️ Warning: No changes detected, and _site does not exist. Skipping deployment."
+            exit 0
+          fi
+
+      - name: 📤 Upload _site for Deployment
         uses: actions/upload-pages-artifact@v3
         with:
           path: "_site/"
