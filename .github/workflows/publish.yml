@@ -16,6 +16,14 @@ jobs:
       - name: 🚀 Checkout Repository
         uses: actions/checkout@v4
 
+      - name: 🔍 Check for Changes in Blog Content
+        id: changes
+        run: |
+          git fetch origin main
+          CHANGED_FILES=$(git diff --name-only HEAD^ HEAD)
+          echo "CHANGED_FILES=$CHANGED_FILES" >> $GITHUB_ENV
+          echo "Changed files: $CHANGED_FILES"
+
       - name: 🔧 Install System Dependencies (for R packages)
         run: |
           sudo apt-get update
@@ -47,16 +55,8 @@ jobs:
           sudo dpkg -i quarto.deb
           quarto check
 
-      - name: 🔑 Authenticate Google Drive
-        run: |
-          echo "${{ secrets.GOOGLE_DRIVE_SA_KEY }}" > gdrive_auth.json
-          export GOOGLE_APPLICATION_CREDENTIALS=gdrive_auth.json
-
-      - name: 📥 Download data from Google Drive
-        run: |
-          gdown --id '1Re-xRy9d3jZmWOVjvC4uwyi8UChxzUIY' --output 'data.csv' --fuzzy
-
-      - name: 🏗 Build Quarto Website
+      - name: 🏗 Build Quarto Website (Only If Necessary)
+        if: contains(env.CHANGED_FILES, '.qmd') || contains(env.CHANGED_FILES, 'posts/') || contains(env.CHANGED_FILES, 'data/')
         uses: quarto-dev/quarto-actions/render@v2
 
       - name: 📤 Publish to GitHub Pages
