@@ -39,7 +39,7 @@ jobs:
       - name: 🔧 Install R Dependencies
         run: |
           Rscript -e 'install.packages(c("pacman", "httr", "jsonlite", "readr", "dplyr", "lubridate", "tidyr", "knitr", "rmarkdown", "stringr", "reticulate"))'
-          Rscript -e 'library(reticulate); use_python(Sys.which("python3"), required=TRUE); py_install(c("requests", "numpy", "pandas"))'
+          Rscript -e 'library(reticulate); use_python(Sys.which("python3"), required=TRUE); py_install(scan("requirements.txt", what="character"), pip=TRUE)'
 
       - name: 🔧 Install Quarto 1.6+
         run: |
