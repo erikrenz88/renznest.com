@@ -31,6 +31,14 @@ jobs:
       - name: 🛠 Ensure _site Exists
         run: mkdir -p _site
 
+      - name: 🔍 Check for Changes in Blog Content
+        id: changes
+        run: |
+          git fetch --no-tags --prune --depth=2 origin main || true
+          CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD 2>/dev/null || echo "force_build")
+          echo "CHANGED_FILES=$CHANGED_FILES" >> $GITHUB_ENV
+          echo "Changed files: $CHANGED_FILES"
+
       - name: 🔧 Install System Dependencies (for R packages)
         run: |
           sudo apt-get update
@@ -70,7 +78,7 @@ jobs:
           quarto check
 
       - name: 🏗 Build Quarto Website (Force Rebuild If Needed)
-        if: github.event_name == 'workflow_dispatch' || contains(env.CHANGED_FILES, '.qmd') || contains(env.CHANGED_FILES, 'posts/') || contains(env.CHANGED_FILES, 'data/')
+        if: github.event_name == 'workflow_dispatch' || env.CHANGED_FILES == 'force_build' || contains(env.CHANGED_FILES, '.qmd') || contains(env.CHANGED_FILES, 'posts/') || contains(env.CHANGED_FILES, 'data/')
         uses: quarto-dev/quarto-actions/render@v2
         timeout-minutes: 30  # Ensures Quarto does not hang indefinitely
 
