@@ -6,23 +6,23 @@ on:
       - main
   schedule:
     - cron: "0 6 * * *"  # Runs daily at 6 AM UTC
-  workflow_dispatch:  # Allows manual execution (force rebuild)
+  workflow_dispatch:
 
 concurrency:
   group: quarto-build
-  cancel-in-progress: false
+  cancel-in-progress: false  # Prevents GitHub from canceling due to new commits
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 60  # Prevents indefinite hanging
 
     steps:
       - name: 🚀 Checkout Repository
         uses: actions/checkout@v4
 
       - name: 🔍 Retrieve Previously Built _site (if exists)
-        uses: actions/download-artifact@v4  # ✅ FIXED
+        uses: actions/download-artifact@v4
         with:
           name: github-pages
           path: _site_previous
@@ -30,23 +30,6 @@ jobs:
 
       - name: 🛠 Ensure _site Exists
         run: mkdir -p _site
-
-      - name: 🔍 Check for Changes in Blog Content
-        id: changes
-        run: |
-          git fetch --no-tags --prune --depth=2 origin main || true
-          CHANGED_FILES=$(git diff --name-only HEAD^ HEAD 2>/dev/null || git diff --name-only HEAD)
-          echo "CHANGED_FILES=$CHANGED_FILES" >> $GITHUB_ENV
-          echo "Changed files: $CHANGED_FILES"
-
-      - name: 🔍 Check if _site/ Exists
-        id: check_site
-        run: |
-          if [ -d "_site_previous" ]; then
-            echo "SITE_EXISTS=true" >> $GITHUB_ENV
-          else
-            echo "SITE_EXISTS=false" >> $GITHUB_ENV
-          fi
 
       - name: 🔧 Install System Dependencies (for R packages)
         run: |
@@ -87,17 +70,18 @@ jobs:
           quarto check
 
       - name: 🏗 Build Quarto Website (Force Rebuild If Needed)
-        if: github.event_name == 'workflow_dispatch' || env.SITE_EXISTS == 'false' || contains(env.CHANGED_FILES, '.qmd') || contains(env.CHANGED_FILES, 'posts/') || contains(env.CHANGED_FILES, 'data/')
+        if: github.event_name == 'workflow_dispatch' || contains(env.CHANGED_FILES, '.qmd') || contains(env.CHANGED_FILES, 'posts/') || contains(env.CHANGED_FILES, 'data/')
         uses: quarto-dev/quarto-actions/render@v2
+        timeout-minutes: 30  # Ensures Quarto does not hang indefinitely
 
       - name: 🔀 Merge Old and New _site
         run: rsync -a _site_previous/ _site/ || true
 
-      - name: 🚨 Check _site Exists Before Upload
+      - name: 🚨 Check Build Success Before Upload
         run: |
           if [ ! -d "_site" ]; then
-            echo "⚠️ Warning: No changes detected, and _site does not exist. Skipping deployment."
-            exit 0
+            echo "❌ ERROR: _site directory is missing! Skipping deployment."
+            exit 1
           fi
 
       - name: 📤 Upload _site for Deployment
