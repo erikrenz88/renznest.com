@@ -191,6 +191,7 @@ def process_regulation_data(input_file="cfr_regulations.csv", output_file="full_
 ```
 
 ```{r}
+#| label: load regulation data saved from gdrive and other csv files
 library(reticulate)
 library(dplyr)
 library(readr)
@@ -242,6 +243,7 @@ if (!success) {
 ```
 
 ```{r}
+#| label: data transformation 1
 # Define bureaucratic and explanatory terms
 bureaucratic_terms <- c("shall", "must", "require", "submit", "authorize", "comply", "prohibit", "enforce", "mandatory")
 explanatory_terms <- c("for the purposes of", "defined as", "background", "explains how")
@@ -272,6 +274,7 @@ regs <- regs %>%
 ```
 
 ```{r}
+#| label: data transformation 2
 # Aggregate data by Title & Year
 grouped_regs <- regs %>% 
   group_by(agency, year) %>%
@@ -285,6 +288,7 @@ grouped_regs <- regs %>%
 ```
 
 ```{r}
+#| label: data transformation 3
 # Melt dataframe (equivalent to pivot_longer in R)
 melted_regs <- grouped_regs %>%
   pivot_longer(cols = c(total_word_count, total_bureaucratic_terms, avg_complexity_ratio),
@@ -299,6 +303,7 @@ percent_change <- function(new, old) {
 ```
 
 ```{r}
+#| label: data transformation 4
 # Compute Year-over-Year Changes
 years <- sort(unique(grouped_regs$year))
 analysis_results <- list()
@@ -339,6 +344,7 @@ df_results <- bind_rows(analysis_results)
 ```
 
 ```{r}
+#| label: data transformation 5
 # Laws passed per year mapping
 congress_map <- list(
   "2012" = c(112), "2013" = c(113), "2014" = c(113),
@@ -413,6 +419,7 @@ ojs_define(yoy = df_melted)
 ```
 
 ```{r}
+#| label: data transformation 6
 # Prepare Data for Visualization
 df_melted <- df_results %>%
   pivot_longer(cols = c(word_growth, bureaucratic_change, complexity_change, efficiency_score),
@@ -481,6 +488,7 @@ $$
 #### Analysis findings
 Below is the number of rules and laws by year done with the above method.
 ```{ojs}
+//| label: chart 1
 Plot = import('https://cdn.jsdelivr.net/npm/@observablehq/plot@0.6.16/+esm')
 d3 = require("d3@7")
 
@@ -524,6 +532,7 @@ The method to pull this information quickly and efficiently with some code uses 
 //| echo: false 
 //| warning: false 
 //| message: false 
+//| label: chart 2
 tdata = transpose(data)
 
 // Ensure date formatting for visualization
@@ -548,9 +557,10 @@ uniqueAgencies = [...new Set(rolledUpData.map(d => d.agency))];
 uniqueAgencies.unshift('All')
 
 // Checkbox input for agency selection
-viewof agency = Inputs.checkbox(uniqueAgencies, {
+viewof agency = Inputs.select(uniqueAgencies, {
     label: "Select Agencies",
-    value: ["All"]  // Default to selecting all
+    value: ["All"],  // Default to selecting all
+    multiple: true
 })
 
 filtered = rolledUpData.filter(d => 
@@ -590,6 +600,7 @@ It is clear to see that the word counts by DOGE's team are greater than this ana
 But word count alone falls short of a definition of bueruacracy, so the next charts look at various metrics (produced with help from ChatGPT Data Analyst (4o) and Claude Sonnet 3.5) that look at things like bureaucracy, efficiency, and word counts by agency by year, as well as year over year changes. The charts can be filtered by all agencies.
 
 ```{ojs}
+//| label: chart 3
 // Grouped line chart (complexity and unconstitutionality index by agency)
 Plot.plot({
   marginLeft: 80,
@@ -641,6 +652,7 @@ These words do not provide a regulation but add word count with the assumption t
 The unconstitutionality index is shown with the complexity ratio for comparison. You can see that regulations are more complex and have more variance, but the "unconsitutionality" looks similar throughout the 12 year span.
 
 ```{ojs}
+//| label: chart 4
 tyoy = transpose(yoy)
 
 fyoy = tyoy.map(d => ({...d, year: new Date(d.year, 0, 1)}))
