@@ -201,14 +201,44 @@ library(stringr)
 rules <- read_csv(here::here('posts/250215-regulations/federal_register_rule_counts.csv'))
 doge <- read_csv(here::here('posts/250215-regulations/regulation-data.csv'))
 
-
-# Download file from Google drive if not available
+# Download regulations from gdrive
 use_python(Sys.which("python3"), required=TRUE)
 gdown <- import("gdown")
 
-regs <- read_csv(gdown$download(id = "1Re-xRy9d3jZmWOVjvC4uwyi8UChxzUIY", fuzzy = TRUE, quiet = FALSE))
+# Set download ID and output variable
+gdrive_id <- "1Re-xRy9d3jZmWOVjvC4uwyi8UChxzUIY"
+max_retries <- 3  # Number of retries if download fails
+attempt <- 1
+success <- FALSE
 
-message('file assigned')
+while (!success && attempt <= max_retries) {
+  message(paste("Attempting to download data (Try", attempt, "of", max_retries, ")"))
+
+  tryCatch({
+    # Directly download and load into regs
+    temp_file <- tempfile(fileext = ".csv")
+    gdown$download(id = gdrive_id, output = temp_file, fuzzy = TRUE, quiet = FALSE)
+    
+    # Check if file was downloaded
+    if (file.exists(temp_file) && file.info(temp_file)$size > 0) {
+      regs <- read_csv(temp_file)
+      success <- TRUE
+      message("Download successful! Data loaded into 'regs'")
+    } else {
+      message("ERROR: File missing or empty, retrying...")
+    }
+  }, error = function(e) {
+    message("Download attempt failed: ", e$message)
+  })
+
+  Sys.sleep(5)  # Pause before retrying
+  attempt <- attempt + 1
+}
+
+# Stop if all attempts fail
+if (!success) {
+  stop("ERROR: Failed to download data after multiple attempts.")
+}
 ```
 
 ```{r}
