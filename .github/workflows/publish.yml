@@ -8,9 +8,14 @@ on:
     - cron: "0 6 * * *"  # Runs daily at 6 AM UTC
   workflow_dispatch:  # Allows manual execution (force rebuild)
 
+concurrency:
+  group: quarto-build
+  cancel-in-progress: false
+
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 60
 
     steps:
       - name: 🚀 Checkout Repository
