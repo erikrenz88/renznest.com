@@ -35,9 +35,21 @@ jobs:
         id: changes
         run: |
           git fetch --no-tags --prune --depth=2 origin main || true
-          CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD 2>/dev/null || echo "force_build")
+          
+          # Check if there's a previous commit to compare against
+          if git rev-parse HEAD~1 >/dev/null 2>&1; then
+            CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD)
+          else
+            CHANGED_FILES="force_build"
+          fi
+
+          # Ensure CHANGED_FILES is never empty
+          if [ -z "$CHANGED_FILES" ]; then
+            CHANGED_FILES="force_build"
+          fi
+
           echo "CHANGED_FILES=$CHANGED_FILES" >> $GITHUB_ENV
-          echo "Changed files: $CHANGED_FILES"
+          echo "Changed files detected: $CHANGED_FILES"
 
       - name: 🔧 Install System Dependencies (for R packages)
         run: |
