@@ -206,16 +206,7 @@ doge <- read_csv(here::here('posts/250215-regulations/regulation-data.csv'))
 use_python(Sys.which("python3"), required=TRUE)
 gdown <- import("gdown")
 
-# File download only if missing
-if (!file.exists("data.csv")) {
-  gdown$download(id = "1Re-xRy9d3jZmWOVjvC4uwyi8UChxzUIY", output = "data.csv", fuzzy = TRUE, quiet = FALSE)
-
-  message('Download successful')
-} else {
-    message('Download failed')
-}
-
-regs <- read_csv('data.csv')
+regs <- read_csv(gdown$download(id = "1Re-xRy9d3jZmWOVjvC4uwyi8UChxzUIY", fuzzy = TRUE, quiet = FALSE))
 
 message('file assigned')
 ```
