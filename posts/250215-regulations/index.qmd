@@ -208,10 +208,16 @@ gdown <- import("gdown")
 
 # File download only if missing
 if (!file.exists("data.csv")) {
-  gdown$download(id = "1Re-xRy9d3jZmWOVjvC4uwyi8UChxzUIY", output = "data.csv", fuzzy = TRUE)
+  gdown$download(id = "1Re-xRy9d3jZmWOVjvC4uwyi8UChxzUIY", output = "data.csv", fuzzy = TRUE, quiet = FALSE)
+
+  message('Download successful')
+} else {
+    message('Download failed')
 }
 
 regs <- read_csv('data.csv')
+
+message('file assigned')
 ```
 
 ```{r}
