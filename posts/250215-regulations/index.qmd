@@ -200,13 +200,11 @@ library(stringr)
 
 # download local .csv files first
 rules <- read_csv(here::here('posts/250215-regulations/federal_register_rule_counts.csv'))
+message("Rules read successfully")
 doge <- read_csv(here::here('posts/250215-regulations/regulation-data.csv'))
-
-if(!file.exists(here::here('posts/250215-regulations/full_regulations.csv'))) {
-    message("ERROR: File missing or empty. Check GitHub Actions logs.")
-} else {
-    regs <- read_csv(here::here('posts/250215-regulations/full_regulations.csv'))
-}
+message("DOGE read successfully")
+regs <- read_csv("your_file.csv", show_col_types = FALSE, na = c("", "NULL", "\0"))
+message("Regs read successfully")
 ```
 
 ```{r}
