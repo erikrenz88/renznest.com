@@ -101,6 +101,12 @@ jobs:
         run: |
           Rscript -e '
             install.packages(c("pacman", "httr", "jsonlite", "readr", "dplyr", "lubridate", "tidyr", "knitr", "rmarkdown", "stringr", "reticulate"))
+          library(reticulate)
+          use_python(Sys.which("python3"), required=TRUE)
+          reqs <- readLines("requirements.txt")
+          reqs <- reqs[!grepl("^\\s*#", reqs)]
+          reqs <- reqs[reqs != ""]
+          py_install(reqs, pip=TRUE)
           '
 
       - name: 🏗 Build Quarto Website
