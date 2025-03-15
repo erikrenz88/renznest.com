@@ -1,114 +1,79 @@
-name: Publish Analysis
+name: Render Quarto Site
 
 on:
   push:
     branches:
       - main
-  schedule:
-    - cron: "0 6 * * *"  # Runs daily at 6 AM UTC
-  workflow_dispatch:  # Allows manual execution (force rebuild)
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:  # Allows manual triggering
+    inputs:
+      force_update:
+        description: "Force gdown data download"
+        required: false
+        default: "false"
+        type: choice
+        options:
+          - "false"
+          - "true"
 
 jobs:
-  build:
+  render-site:
     runs-on: ubuntu-latest
-
     steps:
-      - name: 🚀 Checkout Repository
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: 🔍 Retrieve Previously Built _site (if exists)
-        uses: actions/download-artifact@v4
-        with:
-          name: github-pages
-          path: _site_previous
-        continue-on-error: true  # Don't fail if no previous artifact exists
-
-      - name: 🛠 Ensure _site Exists
-        run: mkdir -p _site
-
-      - name: 🔍 Check for Changes in Blog Content
-        id: changes
-        run: |
-          git fetch --no-tags --prune --depth=2 origin main || true
-          CHANGED_FILES=$(git diff --name-only HEAD^ HEAD 2>/dev/null || git diff --name-only HEAD)
-          echo "CHANGED_FILES=$CHANGED_FILES" >> $GITHUB_ENV
-          echo "Changed files: $CHANGED_FILES"
-
-      - name: 🔍 Check if _site/ Exists
-        id: check_site
-        run: |
-          if [ -d "_site_previous" ]; then
-            echo "SITE_EXISTS=true" >> $GITHUB_ENV
-          else
-            echo "SITE_EXISTS=false" >> $GITHUB_ENV
-          fi
-
-      - name: 🔧 Install System Dependencies (for R packages)
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libpng-dev libcurl4-openssl-dev libssl-dev libxml2-dev
-
-      - name: 🔧 Set Up Python
+      - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.10'
+          python-version: '3.x'
 
-      - name: 🔧 Install Python Dependencies
+      - name: Install gdown
         run: |
-          pip install -r requirements.txt
-          pip install polars gdown requests pandas matplotlib seaborn jupyter-cache
+          python -m pip install --upgrade pip
+          pip install gdown
 
-      - name: 🔧 Set Up R
-        uses: r-lib/actions/setup-r@v2
-        with:
-          r-version: '4.3.0'
-
-      - name: 🔧 Install R Dependencies
+      - name: Check if index.qmd was updated or force update is enabled
+        id: check-update
         run: |
-          Rscript -e '
-            install.packages(c("pacman", "httr", "jsonlite", "readr", "dplyr", "lubridate", "tidyr", "knitr", "rmarkdown", "stringr", "reticulate"))
-            library(reticulate)
-            use_python(Sys.which("python3"), required=TRUE)
-            reqs <- readLines("requirements.txt")
-            reqs <- reqs[!grepl("^\\s*#", reqs)]
-            reqs <- reqs[reqs != ""]
-            py_install(reqs, pip=TRUE)
-          '
-
-      - name: 🔧 Install Quarto 1.6+
-        run: |
-          wget -qO- https://quarto.org/download/latest/quarto-linux-amd64.deb > quarto.deb
-          sudo dpkg -i quarto.deb
-          quarto check
-
-      - name: 🏗 Build Quarto Website (Force Rebuild If Needed)
-        if: github.event_name == 'workflow_dispatch' || env.SITE_EXISTS == 'false' || contains(env.CHANGED_FILES, '.qmd') || contains(env.CHANGED_FILES, 'posts/') || contains(env.CHANGED_FILES, 'data/')
-        uses: quarto-dev/quarto-actions/render@v2
-
-      - name: 🔀 Merge Old and New _site
-        run: rsync -a _site_previous/ _site/ || true
-
-      - name: 🚨 Check _site Exists Before Upload
-        run: |
-          if [ ! -d "_site" ]; then
-            echo "⚠️ Warning: No changes detected, and _site does not exist. Skipping deployment."
-            exit 0
+          if [[ "${{ github.event.inputs.force_update }}" == "true" ]]; then
+            echo "INDEX_UPDATED=true" >> $GITHUB_ENV
+            echo "Manual run with force update enabled. Downloading data."
+          elif git diff --name-only HEAD^ HEAD | grep -q "posts/250215-regulations/index.qmd"; then
+            echo "INDEX_UPDATED=true" >> $GITHUB_ENV
+            echo "Detected change in index.qmd, will download data."
+          else
+            echo "INDEX_UPDATED=false" >> $GITHUB_ENV
+            echo "No change in index.qmd, skipping data download."
           fi
 
-      - name: 📤 Upload _site for Deployment
-        uses: actions/upload-pages-artifact@v3
+      - name: Download regulations data (if index.qmd changed or force update)
+        if: env.INDEX_UPDATED == 'true'
+        run: |
+          echo "Downloading updated regulation data..."
+          gdown --id 1Re-xRy9d3jZmWOVjvC4uwyi8UChxzUIY -O posts/250215-regulations/full_regulations.csv
+
+      - name: Install Quarto
+        uses: quarto-dev/quarto-actions/setup@v2
         with:
-          path: "_site/"
+          version: "latest"
 
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-    permissions:
-      pages: write
-      id-token: write
+      - name: Install R and Dependencies
+        uses: r-lib/actions/setup-r@v2
 
-    steps:
-      - name: 🚀 Deploy to GitHub Pages
-        uses: actions/deploy-pages@v4
+      - name: Install R Packages
+        run: |
+          Rscript -e 'install.packages(c("tidyverse", "reticulate", "here"))'
+
+      - name: Render Quarto
+        run: |
+          quarto render
+
+      - name: Deploy to GitHub Pages
+        if: github.event_name == 'push'
+        uses: actions/upload-artifact@v4
+        with:
+          name: site
+          path: _site
