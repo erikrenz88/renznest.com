@@ -53,7 +53,7 @@ jobs:
         if: env.INDEX_UPDATED == 'true'
         run: |
           echo "Downloading updated regulation data..."
-          gdown --id 1Re-xRy9d3jZmWOVjvC4uwyi8UChxzUIY -O posts/250215-regulations/regulation-data.csv
+          gdown --id 1Re-xRy9d3jZmWOVjvC4uwyi8UChxzUIY -O posts/250215-regulations/full_regulations.csv
 
       - name: Install Quarto
         uses: quarto-dev/quarto-actions/setup@v2
@@ -73,7 +73,7 @@ jobs:
 
       - name: Deploy to GitHub Pages
         if: github.event_name == 'push'
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: site
           path: _site
