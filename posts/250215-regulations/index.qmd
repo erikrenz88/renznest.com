@@ -203,7 +203,12 @@ rules <- read_csv(here::here('posts/250215-regulations/federal_register_rule_cou
 message("Rules read successfully")
 doge <- read_csv(here::here('posts/250215-regulations/regulation-data.csv'))
 message("DOGE read successfully")
-regs <- read_csv("posts/250215-regulations/full_regulations.csv", show_col_types = FALSE)
+
+# Get the data path from environment variable
+data_path <- Sys.getenv("DATA_PATH", unset = "/tmp/full_regulations.csv")
+
+# Read the CSV
+regs <- read_csv(data_path, show_col_types = FALSE)
 message("Regs read successfully")
 ```
 
