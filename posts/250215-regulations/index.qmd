@@ -203,7 +203,7 @@ rules <- read_csv(here::here('posts/250215-regulations/federal_register_rule_cou
 message("Rules read successfully")
 doge <- read_csv(here::here('posts/250215-regulations/regulation-data.csv'))
 message("DOGE read successfully")
-regs <- read_csv("your_file.csv", show_col_types = FALSE)
+regs <- read_csv("posts/250215-regulations/full_regulations.csv", show_col_types = FALSE)
 message("Regs read successfully")
 ```
 
