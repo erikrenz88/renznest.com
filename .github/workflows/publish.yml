@@ -64,6 +64,8 @@ jobs:
       - name: 📥 Download data from Google Drive
         run: |
           gdown --id '1Re-xRy9d3jZmWOVjvC4uwyi8UChxzUIY' --output 'data.csv' --fuzzy
+          echo "DATA_CSV_PATH=$(pwd)/data.csv" >> $GITHUB_ENV  # Store the absolute path
+          ls -lah  # Debug: Check if the file exists
           
       - name: 🏗 Build Quarto Website
         uses: quarto-dev/quarto-actions/render@v2
