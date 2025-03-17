@@ -10,6 +10,7 @@ freeze: auto
 
 ```{python}
 #| label: set up libraries, logging, and API key
+#| eval: false
 import requests
 import logging
 import time
@@ -192,7 +193,6 @@ def process_regulation_data(input_file="cfr_regulations.csv", output_file="full_
 
 ```{r}
 #| label: load regulation data saved from gdrive and other csv files
-library(reticulate)
 library(dplyr)
 library(readr)
 library(tidyr)
