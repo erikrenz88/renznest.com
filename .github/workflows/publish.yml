@@ -19,7 +19,7 @@ on:
 
 concurrency:
   group: quarto-build
-  cancel-in-progress: false  # Prevents GitHub from canceling due to new commits
+  cancel-in-progress: false
 
 jobs:
   build:
@@ -29,25 +29,15 @@ jobs:
       - name: 🚀 Checkout Repository
         uses: actions/checkout@v4
 
-      - name: 🔍 Retrieve Previously Built _site (if exists)
-        uses: actions/download-artifact@v4
-        with:
-          name: github-pages
-          path: _site_previous
-        continue-on-error: true  # Don't fail if no previous artifact exists
-
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.10'  # Use specific Python version
+          python-version: '3.x'
 
       - name: Install gdown
         run: |
           python -m pip install --upgrade pip
           pip install gdown
-
-      - name: 🛠 Ensure _site Exists
-        run: mkdir -p _site
 
       - name: Check if index.qmd was updated or force update is enabled
         id: check-update
@@ -59,7 +49,7 @@ jobs:
             echo "INDEX_UPDATED=true" >> $GITHUB_ENV
             echo "Manual run with force update enabled. Downloading data."
           elif git ls-files --error-unmatch "posts/250215-regulations/index.qmd" > /dev/null 2>&1 && \
-               (git diff --name-only HEAD~2 HEAD | grep -q "posts/250215-regulations/index.qmd"); then
+               git diff --name-only HEAD~2 HEAD | grep -q "posts/250215-regulations/index.qmd" || true; then
             echo "INDEX_UPDATED=true" >> $GITHUB_ENV
             echo "Detected change in index.qmd in the last 2 commits, will download data."
           else
@@ -68,24 +58,30 @@ jobs:
           fi
 
       - name: Debug INDEX_UPDATED
-        run: echo "INDEX_UPDATED is ${{ env.INDEX_UPDATED }}"
+        run: echo "INDEX_UPDATED is $INDEX_UPDATED"
 
       - name: Download regulations data (if index.qmd changed or force update)
         if: env.INDEX_UPDATED == 'true'
         run: |
           echo "Downloading updated regulation data..."
-          gdown --id 1Re-xRy9d3jZmWOVjvC4uwyi8UChxzUIY -O posts/250215-regulations/full_regulations.csv
+          gdown --id 1Re-xRy9d3jZmWOVjvC4uwyi8UChxzUIY -O /tmp/full_regulations.csv
+          echo "DATA_PATH=/tmp/full_regulations.csv" >> $GITHUB_ENV
 
-      - name: 🔧 Install Quarto 1.6.42
+      - name: 🔧 Install Quarto
         run: |
-          wget -qO quarto.deb https://github.com/quarto-dev/quarto-cli/releases/download/v1.6.42/quarto-1.6.42-linux-amd64.deb
+          wget -qO- https://quarto.org/download/latest/quarto-linux-amd64.deb > quarto.deb
           sudo dpkg -i quarto.deb
           quarto check
 
-      - name: 🔧 Install System Dependencies (for R packages)
+      - name: 🔧 Install System Dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y libpng-dev libcurl4-openssl-dev libssl-dev libxml2-dev
+
+      - name: 🔧 Set Up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
 
       - name: 🔧 Install Python Dependencies
         run: |
@@ -101,28 +97,19 @@ jobs:
         run: |
           Rscript -e '
             install.packages(c("pacman", "httr", "jsonlite", "readr", "dplyr", "lubridate", "tidyr", "knitr", "rmarkdown", "stringr", "reticulate"))
-          library(reticulate)
-          use_python(Sys.which("python3"), required=TRUE)
-          reqs <- readLines("requirements.txt")
-          reqs <- reqs[!grepl("^\\s*#", reqs)]
-          reqs <- reqs[reqs != ""]
-          py_install(reqs, pip=TRUE)
+            library(reticulate)
+            use_python(Sys.which("python3"), required=TRUE)
+            reqs <- readLines("requirements.txt")
+            reqs <- reqs[!grepl("^\\s*#", reqs)]
+            reqs <- reqs[reqs != ""]
+            py_install(reqs, pip=TRUE)
           '
 
       - name: 🏗 Build Quarto Website
-        if: github.event_name == 'workflow_dispatch' || env.INDEX_UPDATED == 'true'
-        uses: quarto-dev/quarto-actions/render@v2
-        timeout-minutes: 30  # Ensures Quarto does not hang indefinitely
-
-      - name: 🔀 Merge Old and New _site
-        run: rsync -a _site_previous/ _site/ || true
-
-      - name: 🚨 Check Build Success Before Upload
+        env:
+          DATA_PATH: ${{ env.DATA_PATH }}  # Pass the file path as an environment variable
         run: |
-          if [ ! -d "_site" ]; then
-            echo "❌ ERROR: _site directory is missing! Skipping deployment."
-            exit 1
-          fi
+          quarto render --execute-param data_path=$DATA_PATH
 
       - name: 📤 Upload _site for Deployment
         uses: actions/upload-pages-artifact@v3
