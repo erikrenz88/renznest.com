@@ -33,7 +33,7 @@ jobs:
 
       - name: 🔧 Install R Dependencies
         run: |
-          Rscript -e 'install.packages(c("rmarkdown", "knitr", "httr", "stringr", "jsonlite", "readr", "dplyr", "lubridate", "tidyr", "ggplot2", "googledrive", "rpolars"))'
+          Rscript -e 'install.packages(c("rmarkdown", "knitr", "httr", "stringr", "jsonlite", "readr", "dplyr", "lubridate", "tidyr", "ggplot2", "reticulate"))'
       - name: 🔧 Install Quarto 1.6+
         run: |
           wget -qO- https://quarto.org/download/latest/quarto-linux-amd64.deb > quarto.deb
