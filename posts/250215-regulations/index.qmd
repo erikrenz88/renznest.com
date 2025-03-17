@@ -8,6 +8,17 @@ bluesky-comments:
 freeze: auto
 ---
 
+```{r}
+#| label: setup
+library(reticulate)
+use_python(Sys.which('python3'), required = TRUE)
+
+library(dplyr)
+library(readr)
+library(tidyr)
+library(stringr)
+```
+
 ```{python}
 #| label: set up libraries, logging, and API key
 #| eval: false
@@ -193,10 +204,6 @@ def process_regulation_data(input_file="cfr_regulations.csv", output_file="full_
 
 ```{r}
 #| label: load regulation data saved from gdrive and other csv files
-library(dplyr)
-library(readr)
-library(tidyr)
-library(stringr)
 
 # download local .csv files first
 rules <- read_csv(here::here('posts/250215-regulations/federal_register_rule_counts.csv'))
