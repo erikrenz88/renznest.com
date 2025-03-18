@@ -63,13 +63,12 @@ jobs:
 
       - name: 📥 Download data from Google Drive
         run: |
-          mkdir -p $GITHUB_WORKSPACE/data  # Create a shared directory
-          gdown --id '1Re-xRy9d3jZmWOVjvC4uwyi8UChxzUIY' --output "$GITHUB_WORKSPACE/data/data.csv" --fuzzy
-          echo "DATA_CSV_PATH=$GITHUB_WORKSPACE/data/data.csv" >> $GITHUB_ENV  # Store path in env
-          ls -lah $GITHUB_WORKSPACE/data  # Debug: Verify file exists
+          gdown --id '1Re-xRy9d3jZmWOVjvC4uwyi8UChxzUIY' --output 'data.csv' --fuzzy
+
           
       - name: 🏗 Build Quarto Website
-        uses: quarto-dev/quarto-actions/render@v2
+        run: |
+          quarto render --debug
 
       - name: 📤 Publish to GitHub Pages
         uses: actions/upload-pages-artifact@v3
