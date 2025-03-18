@@ -211,17 +211,8 @@ message("Rules read successfully")
 doge <- read_csv(here::here('posts/250215-regulations/regulation-data.csv'))
 message("DOGE read successfully")
 
-# Retrieve file path from environment variable
-data_path <- Sys.getenv("DATA_CSV_PATH")
-
-# Debugging: Print the path to confirm
-print(paste("Using data path:", data_path))
-
-# Ensure the file exists before reading
-if (!file.exists(data_path)) stop("ERROR: data.csv not found!")
-
 # Load the dataset
-regs <- read_csv(data_path)
+regs <- read_csv(here::here('data.csv'))
 message("Regs read successfully")
 ```
 
