@@ -28,3 +28,6 @@ pydrive2
 jupyter
 jupyter-cache
 nbclient
+
+# Py2R
+rpy2
