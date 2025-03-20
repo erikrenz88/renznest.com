@@ -21,7 +21,6 @@ library(stringr)
 
 ```{python}
 #| label: set up libraries, logging, and API key
-#| eval: false
 import requests
 import logging
 import time
@@ -202,226 +201,208 @@ def process_regulation_data(input_file="cfr_regulations.csv", output_file="full_
 # process_regulation_data()  # Retrieves granules & text, saves to a new CSV
 ```
 
-```{r}
-#| label: load regulation data saved from other csv files
-
-# download local .csv files first
-rules <- read_csv(here::here('posts/250215-regulations/federal_register_rule_counts.csv'))
-message("Rules read successfully")
-doge <- read_csv(here::here('posts/250215-regulations/regulation-data.csv'))
-message("DOGE read successfully")
-```
-
 ```{python}
-#| label: download gdrive data
-import gdown
-import pandas as pd
-import io
-import rpy2.robjects as ro
-from rpy2.robjects import pandas2ri
+#| label: download data
+# download local .csv files
+# Define file paths
+rules_path = "posts/250215-regulations/federal_register_rule_counts.csv"
+doge_path = "posts/250215-regulations/regulation-data.csv"
+
+# Read the CSV files if they exist
+if os.path.exists(rules_path):
+    rules = pl.read_csv(rules_path)
+    print("Rules read successfully")
+else:
+    print(f"Warning: {rules_path} not found.")
+
+if os.path.exists(doge_path):
+    doge = pl.read_csv(doge_path)
+    print("DOGE data read successfully")
+else:
+    print(f"Warning: {doge_path} not found.")
 
 # Google Drive file ID
 gdrive_id = "1Re-xRy9d3jZmWOVjvC4uwyi8UChxzUIY"
+url = f"https://drive.google.com/uc?id={gdrive_id}"
 
-# Use `cached_download` to store file temporarily
-print("Downloading file to temporary cache...")
-file_path = gdown.cached_download(f"https://drive.google.com/uc?id={gdrive_id}")
-
-# Load CSV into DataFrame
-df = pd.read_csv(file_path)
-
-# Print DataFrame shape for verification
-print(f"Downloaded DataFrame with {df.shape[0]} rows and {df.shape[1]} columns.")
-
-# Save DataFrame to R environment
-pandas2ri.activate()
-ro.globalenv["regs"] = df
+# Download and load directly into a dataframe
+print("Downloading file into memory...")
+temp_file = gdown.download(url, quiet=False)
+regs = pl.read_csv(temp_file)
 ```
 
-```{r}
-#| label: data transformation 1
+```{python}
 # Define bureaucratic and explanatory terms
-bureaucratic_terms <- c("shall", "must", "require", "submit", "authorize", "comply", "prohibit", "enforce", "mandatory")
-explanatory_terms <- c("for the purposes of", "defined as", "background", "explains how")
+# Bureaucratic & Explanatory Terms
+bureaucratic_terms = ["shall", "must", "require", "submit", "authorize", "comply", "prohibit", "enforce", "mandatory"]
+explanatory_terms = ["for the purposes of", "defined as", "background", "explains how"]
 
-# Function to count bureaucratic terms in text
-count_bureaucratic_terms <- function(text) {
-  if (is.na(text)) return(0)
-  sum(sapply(bureaucratic_terms, function(term) str_count(text, fixed(term, ignore_case = TRUE))))
-}
+# Function to count occurrences of terms in text
+def count_terms(text, terms):
+    if text is None:
+        return 0
+    return sum(text.lower().count(term) for term in terms)
 
-# Function to calculate complexity ratio
-complexity_ratio <- function(text) {
-  if (is.na(text)) return(0)
-  proc_count <- count_bureaucratic_terms(text)
-  exp_count <- sum(sapply(explanatory_terms, function(term) str_count(text, fixed(term, ignore_case = TRUE))))
-  return(proc_count / (exp_count + 1))  # Avoid division by zero
-}
+# Ensure dateIssued is properly converted to a date before extracting year
+regs = regs.with_columns(pl.col("dateIssued").str.to_date("%Y-%m-%d").alias("dateIssued"))
 
-# Ensure dateIssued column is in Date format and extract year
-regs <- regs %>%
-  mutate(
-    year = as.integer(format(as.Date(dateIssued, format = "%Y-%m-%d"), "%Y")),
-    bureaucratic_terms = sapply(text, count_bureaucratic_terms),
-    complexity_ratio = sapply(text, complexity_ratio),
-    reg_word_count = ifelse(!is.na(text), str_count(text, "\\S+"), 0)  # Count words
-  ) |>
-  ungroup()
+# Transform Data
+regs = (
+    regs.with_columns([
+        pl.col("dateIssued").dt.year().alias("year"),  # ✅ Extract year from actual date column
+        pl.col("text").map_elements(lambda x: count_terms(x, bureaucratic_terms, return_dtype=pl.Int32)).alias("bureaucratic_terms"),
+        pl.col("text").map_elements(lambda x: count_terms(x, explanatory_terms), return_dtype=pl.Int32).alias("explanatory_terms"),
+        pl.col("text").map_elements(lambda x: len(x.split()) if x else 0, return_dtype=pl.Int32).alias("reg_word_count")  # Count words
+    ])
+    .with_columns([
+        (pl.col("bureaucratic_terms") / (pl.col("explanatory_terms") + 1)).alias("complexity_ratio")  # Avoid division by zero
+    ])
+)
 ```
 
-```{r}
-#| label: data transformation 2
-# Aggregate data by Title & Year
-grouped_regs <- regs %>% 
-  group_by(agency, year) %>%
-  summarise(
-    num_sections = sum(granule_count, na.rm = TRUE),
-    total_word_count = sum(reg_word_count, na.rm = TRUE),
-    total_bureaucratic_terms = sum(bureaucratic_terms, na.rm = TRUE),
-    avg_complexity_ratio = mean(complexity_ratio, na.rm = TRUE),
-    .groups = "drop"
-  )
+```{python}
+# Group Data by Agency & Year
+grouped_regs = (
+    regs.group_by(["agency", "year"])
+    .agg(
+        pl.sum("granule_count").alias("num_sections"),
+        pl.sum("reg_word_count").alias("total_word_count"),
+        pl.sum("bureaucratic_terms").alias("total_bureaucratic_terms"),
+        pl.mean("complexity_ratio").alias("avg_complexity_ratio")
+    )
+)
 ```
 
-```{r}
-#| label: data transformation 3
-# Melt dataframe (equivalent to pivot_longer in R)
-melted_regs <- grouped_regs %>%
-  pivot_longer(cols = c(total_word_count, total_bureaucratic_terms, avg_complexity_ratio),
-               names_to = "metric",
-               values_to = "value")
-
-# Function for percentage change calculation
-percent_change <- function(new, old) {
-  if (old == 0) return(0)
-  return((new - old) / old * 100)
-}
+```{python}
+# Reshape Data: Melt DataFrame for Metric-Based Analysis
+melted_regs = (
+    grouped_regs.melt(
+        id_vars=["agency", "year"],
+        value_vars=["total_word_count", "total_bureaucratic_terms", "avg_complexity_ratio"],
+        variable_name="metric",
+        value_name="value"
+    )
+)
 ```
 
-```{r}
-#| label: data transformation 4
+```{python}
 # Compute Year-over-Year Changes
-years <- sort(unique(grouped_regs$year))
-analysis_results <- list()
+def percent_change(new, old):
+    return 0 if old == 0 else ((new - old) / old) * 100
 
-for (i in 2:length(years)) {
-  prev_year <- years[i - 1]
-  curr_year <- years[i]
+years = sorted(grouped_regs["year"].unique().to_list())
+analysis_results = []
 
-  prev_data <- filter(melted_regs, year == prev_year)
-  curr_data <- filter(melted_regs, year == curr_year)
+for i in range(1, len(years)):
+    prev_year = years[i - 1]
+    curr_year = years[i]
 
-  prev_word_count <- sum(filter(prev_data, metric == "total_word_count")$value, na.rm = TRUE)
-  curr_word_count <- sum(filter(curr_data, metric == "total_word_count")$value, na.rm = TRUE)
+    prev_data = melted_regs.filter(pl.col("year") == prev_year)
+    curr_data = melted_regs.filter(pl.col("year") == curr_year)
 
-  prev_bureaucratic <- sum(filter(prev_data, metric == "total_bureaucratic_terms")$value, na.rm = TRUE)
-  curr_bureaucratic <- sum(filter(curr_data, metric == "total_bureaucratic_terms")$value, na.rm = TRUE)
+    prev_word_count = prev_data.filter(pl.col("metric") == "total_word_count")["value"].sum()
+    curr_word_count = curr_data.filter(pl.col("metric") == "total_word_count")["value"].sum()
 
-  prev_complexity <- mean(filter(prev_data, metric == "avg_complexity_ratio")$value, na.rm = TRUE)
-  curr_complexity <- mean(filter(curr_data, metric == "avg_complexity_ratio")$value, na.rm = TRUE)
+    prev_bureaucratic = prev_data.filter(pl.col("metric") == "total_bureaucratic_terms")["value"].sum()
+    curr_bureaucratic = curr_data.filter(pl.col("metric") == "total_bureaucratic_terms")["value"].sum()
 
-  word_growth <- percent_change(curr_word_count, prev_word_count)
-  bureaucratic_change <- percent_change(curr_bureaucratic, prev_bureaucratic)
-  complexity_change <- percent_change(curr_complexity, prev_complexity)
+    prev_complexity = prev_data.filter(pl.col("metric") == "avg_complexity_ratio")["value"].mean()
+    curr_complexity = curr_data.filter(pl.col("metric") == "avg_complexity_ratio")["value"].mean()
 
-  efficiency_score <- ifelse(word_growth != 0, (bureaucratic_change + complexity_change) / (2 * word_growth), 0)
+    word_growth = percent_change(curr_word_count, prev_word_count)
+    bureaucratic_change = percent_change(curr_bureaucratic, prev_bureaucratic)
+    complexity_change = percent_change(curr_complexity, prev_complexity)
 
-  analysis_results[[as.character(curr_year)]] <- data.frame(
-    year = curr_year,
-    word_growth = word_growth,
-    bureaucratic_change = bureaucratic_change,
-    complexity_change = complexity_change,
-    efficiency_score = efficiency_score
-  )
-}
+    efficiency_score = (bureaucratic_change + complexity_change) / (2 * word_growth) if word_growth != 0 else 0
 
-# Convert list to DataFrame
-df_results <- bind_rows(analysis_results)
+    analysis_results.append({
+        "year": curr_year,
+        "word_growth": word_growth,
+        "bureaucratic_change": bureaucratic_change,
+        "complexity_change": complexity_change,
+        "efficiency_score": efficiency_score
+    })
+
+# Convert results to DataFrame
+df_results = pl.DataFrame(analysis_results)
 ```
 
-```{r}
-#| label: data transformation 5
-# Laws passed per year mapping
-congress_map <- list(
-  "2012" = c(112), "2013" = c(113), "2014" = c(113),
-  "2015" = c(114), "2016" = c(114),
-  "2017" = c(115), "2018" = c(115),
-  "2019" = c(116), "2020" = c(116),
-  "2021" = c(117), "2022" = c(117),
-  "2023" = c(118), "2024" = c(118)
-)
-
-laws_by_congress <- c(
-  "112" = 284, "113" = 296, "114" = 329, "115" = 442,
-  "116" = 344, "117" = 328, "118" = 280
-)
-
-# Compute laws passed per year
-laws_by_year <- sapply(names(congress_map), function(year) {
-  sum(sapply(congress_map[[year]], function(congress) laws_by_congress[as.character(congress)]), na.rm = TRUE) / 2
-}, simplify = TRUE)
-
-laws_by_year <- data.frame(year = as.integer(names(laws_by_year)), num_laws_passed = laws_by_year)
-
-# load DOGE data
-doge_data_path <- "posts/250215-regulations/regulation-data.csv"
-
-if (file.exists(doge_data_path)) {
-   doge <- read_csv(doge_data_path)
-#  df_results <- df_results %>%
-#   inner_join(doge, by = "year")
- } else {  
-   print("DOGE data file not available for comparison")
+```{python}
+# Congress Law Mapping
+congress_map = {
+    "2012": [112], "2013": [113], "2014": [113],
+    "2015": [114], "2016": [114],
+    "2017": [115], "2018": [115],
+    "2019": [116], "2020": [116],
+    "2021": [117], "2022": [117],
+    "2023": [118], "2024": [118]
 }
 
-# set up yearly section and word counts then join yearly laws and DOGE data
-df_sect <- grouped_regs |>
-  left_join(laws_by_year, by = 'year') |>
-  left_join(rules, by = 'year') |>
-  mutate(
-    unconstitutionality_index = rule_count / num_laws_passed
-  ) |>
-  left_join(doge, by = 'year') |>
-  rename(DOGE_word_count = word_count) |>
-  pivot_longer(
-    cols = c('total_bureaucratic_terms', 'avg_complexity_ratio', 'total_word_count', 'rule_count', 'num_laws_passed', 'num_sections', 'unconstitutionality_index', 'DOGE_word_count', 'regulation_count'),
-    names_to = 'metric',
-    values_to = 'value'
-  )
+laws_by_congress = {
+    112: 284, 113: 296, 114: 329, 115: 442,
+    116: 344, 117: 328, 118: 280
+}
 
-# charts
-charts <- df_sect |>
-  select(agency, year, metric, value) |>
-  mutate(year = as.character(year))
+laws_by_year = {
+    int(year): sum(laws_by_congress[congress] for congress in congress_map[year]) / 2
+    for year in congress_map
+}
 
-# laws and rules charts
-lawrule <- laws_by_year |>
-  inner_join(rules, by = 'year') |>
-  pivot_longer(
-    cols = c('num_laws_passed', 'rule_count'),
-    names_to = 'metric',
-    values_to = 'value'
-  )
+laws_by_year_df = pl.DataFrame({"year": list(laws_by_year.keys()), "num_laws_passed": list(laws_by_year.values())})
 
-# Prepare Data for Visualization
-df_melted <- df_results %>%
-  pivot_longer(cols = c(word_growth, bureaucratic_change, complexity_change, efficiency_score),
-               names_to = "metric",
-               values_to = "value")
+# Load DOGE Data (if available)
+doge_data_path = "posts/250215-regulations/regulation-data.csv"
+
+if os.path.exists(doge_data_path):
+    doge = pl.read_csv(doge_data_path)
+else:
+    print("DOGE data file not available for comparison")
+
+# Compute Unconstitutionality Index
+df_sect = (
+    grouped_regs
+    .join(laws_by_year_df, on="year", how="left")  # 🏛️ Join Laws Passed Per Year
+    .join(rules, on="year", how="left")  # 📜 Join Federal Register Rules Data
+    .with_columns(
+        (pl.col("rule_count") / pl.col("num_laws_passed")).alias("unconstitutionality_index")
+    )
+    .join(doge, on="year", how="left")  # 🐶 Join DOGE Data
+    .rename({"word_count": "DOGE_word_count"})  # Rename DOGE word count column
+    .melt(
+        id_vars=["agency", "year"],  # Keep these columns fixed
+        value_vars=[
+            "total_bureaucratic_terms", "avg_complexity_ratio", "total_word_count",
+            "rule_count", "num_laws_passed", "num_sections",
+            "unconstitutionality_index", "DOGE_word_count", "regulation_count"
+        ],
+        variable_name="metric",
+        value_name="value"
+    )
+)
+
+# Reshape Data for Charts
+charts = df_sect
+
+# Laws and Rules Charts
+lawrule = (
+    laws_by_year_df
+    .join(rules, on="year", how="inner")
+    .melt(id_vars=["year"], value_vars=["num_laws_passed", "rule_count"], variable_name="metric", value_name="value")
+)
+
+# Prepare Year-over-Year Data for Visualization
+df_melted = (
+    df_results.melt(
+        id_vars=["year"],
+        value_vars=["word_growth", "bureaucratic_change", "complexity_change", "efficiency_score"],
+        variable_name="metric_type",
+        value_name="value"
+    )
+)
 
 ojs_define(lawrule = lawrule)
 ojs_define(data = charts)
 ojs_define(yoy = df_melted)
-```
-
-```{r}
-#| label: data transformation 6
-# Prepare Data for Visualization
-df_melted <- df_results %>%
-  pivot_longer(cols = c(word_growth, bureaucratic_change, complexity_change, efficiency_score),
-               names_to = "metric_type",
-               values_to = "value")
-
 ```
 
 ::: {.callout-note title='TL;DR'}
