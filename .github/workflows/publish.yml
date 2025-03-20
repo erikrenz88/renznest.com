@@ -56,16 +56,6 @@ jobs:
           sudo dpkg -i quarto.deb
           quarto check
           
-      - name: 🔑 Authenticate Google Drive
-        run: |
-          echo "${{ secrets.GOOGLE_DRIVE_SA_KEY }}" > gdrive_auth.json
-          export GOOGLE_APPLICATION_CREDENTIALS=gdrive_auth.json
-
-      - name: 📥 Download data from Google Drive
-        run: |
-          gdown --id '1Re-xRy9d3jZmWOVjvC4uwyi8UChxzUIY' --output 'data.csv' --fuzzy
-
-          
       - name: 🏗 Build Quarto Website
         run: |
           quarto render --debug
