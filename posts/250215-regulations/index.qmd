@@ -217,7 +217,7 @@ message("DOGE read successfully")
 import gdown
 import pandas as pd
 import io
-import rpy2.rojects as ro
+import rpy2.robjects as ro
 from rpy2.robjects import pandas2ri
 
 # Google Drive file ID
