@@ -266,17 +266,38 @@ def count_terms(text, terms):
 regs = regs.with_columns(pl.col("dateIssued").str.to_date("%Y-%m-%d").alias("dateIssued"))
 
 # Transform Data
-regs = (
-    regs.with_columns([
-        pl.col("dateIssued").dt.year().alias("year"),  # ✅ Extract year from actual date column
-        pl.col("text").map_elements(lambda x: count_terms(x, bureaucratic_terms)).cast(pl.Int32).alias("bureaucratic_terms"),
-        pl.col("text").map_elements(lambda x: count_terms(x, explanatory_terms)).cast(pl.Int32).alias("explanatory_terms"),
-        pl.col("text").map_elements(lambda x: len(x.split()) if x else 0).cast(pl.Int32).alias("reg_word_count")  # Count words
-    ])
-    .with_columns([
-        (pl.col("bureaucratic_terms") / (pl.col("explanatory_terms") + 1)).alias("complexity_ratio")  # Avoid division by zero
-    ])
-)
+try:
+  regs = (
+      regs.with_columns([
+          pl.col("dateIssued").dt.year().alias("year"),  # ✅ Extract year from actual date column
+          pl.col("text").map_elements(lambda x: count_terms(x, bureaucratic_terms)).cast(pl.Int32).alias("bureaucratic_terms"),
+          pl.col("text").map_elements(lambda x: count_terms(x, explanatory_terms)).cast(pl.Int32).alias("explanatory_terms"),
+          pl.col("text").map_elements(lambda x: len(x.split()) if x else 0).cast(pl.Int32).alias("reg_word_count")  # Count words
+      ])
+      .with_columns([
+          (pl.col("bureaucratic_terms") / (pl.col("explanatory_terms") + 1)).alias("complexity_ratio")  # Avoid division by zero
+      ])
+  )
+except Exception as e:
+ print("\n❌ ERROR DURING REGULATORY TRANSFORMATION BLOCK\n")
+
+  # Print working directory and contents
+  print("🧭 Working directory:", os.getcwd())
+  print("📁 Directory contents:")
+  for root, dirs, files in os.walk("."):
+      print(f"{root}/")
+      for f in files:
+          print(f"  - {f}")
+
+  # Show whether key files exist
+  print("\n🔎 Checking file paths:")
+  print("  - federal_register_rule_counts.csv:", Path("posts/250215-regulations/federal_register_rule_counts.csv").exists())
+  print("  - regulation-data.csv:", Path("posts/250215-regulations/regulation-data.csv").exists())
+
+  # Print traceback
+  traceback.print_exc()
+  raise e 
+
 ```
 
 ```{python}
