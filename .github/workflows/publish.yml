@@ -16,6 +16,41 @@ jobs:
     steps:
       - name: 🚀 Checkout Repository
         uses: actions/checkout@v4
+  
+      - name: 🧭 Check File Paths and Environment Context
+        run: |
+          echo "🔍 GITHUB_WORKSPACE: $GITHUB_WORKSPACE"
+      
+          echo ""
+          echo "📍 Moving to workspace directory..."
+          cd "$GITHUB_WORKSPACE"
+      
+          echo ""
+          echo "📂 Top-level contents of GITHUB_WORKSPACE:"
+          ls -alh
+      
+          echo ""
+          echo "📁 Recursive contents of posts/250215-regulations:"
+          ls -alh posts/250215-regulations || echo "❌ Directory not found."
+      
+          echo ""
+          echo "📄 Checking for CSV files..."
+      
+          if [ -f "$GITHUB_WORKSPACE/posts/250215-regulations/federal_register_rule_counts.csv" ]; then
+            echo "✅ Found: federal_register_rule_counts.csv"
+          else
+            echo "❌ Missing: federal_register_rule_counts.csv"
+          fi
+      
+          if [ -f "$GITHUB_WORKSPACE/posts/250215-regulations/regulation-data.csv" ]; then
+            echo "✅ Found: regulation-data.csv"
+          else
+            echo "❌ Missing: regulation-data.csv"
+          fi
+      
+          echo ""
+          echo "✅ Exporting GITHUB_WORKSPACE for Quarto or Python access..."
+          echo "GITHUB_WORKSPACE=$GITHUB_WORKSPACE" >> $GITHUB_ENV
 
       - name: 🔧 Set Up Python
         uses: actions/setup-python@v4
