@@ -41,14 +41,7 @@ jobs:
         run: |
           Rscript -e '
             install.packages("remotes")
-            install.packages("reticulate")
             install.packages(c("pacman", "httr", "jsonlite", "readr", "dplyr", "lubridate", "tidyr", "knitr", "rmarkdown", "stringr"))
-            library(reticulate)
-            use_python(Sys.which("python3"), required=TRUE)
-            reqs <- readLines("requirements.txt")
-            reqs <- reqs[!grepl("^\\s*#", reqs)]
-            reqs <- reqs[reqs != ""]
-            py_install(reqs, pip=TRUE)
           '
           
       - name: 🔧 Install Quarto 1.6+
