@@ -200,9 +200,10 @@ def process_regulation_data(input_file="cfr_regulations.csv", output_file="full_
 ```{python}
 #| label: download data
 # download local .csv files
-# Define file paths
-rules_path = "posts/250215-regulations/federal_register_rule_counts.csv"
-doge_path = "posts/250215-regulations/regulation-data.csv"
+
+base_path = os.getcwd()  # GitHub Actions' working directory
+rules_path = os.path.join(base_path, "posts", "250215-regulations", "federal_register_rule_counts.csv")
+doge_path = os.path.join(base_path, "posts", "250215-regulations", "regulation-data.csv")
 
 # Read the CSV files if they exist
 if os.path.exists(rules_path):
