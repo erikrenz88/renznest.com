@@ -37,8 +37,24 @@ from pydrive.auth import GoogleAuth
 from pydrive.drive import GoogleDrive
 from pathlib import Path
 
-if os.path.exists(doge_data_path):
-    doge = pl.read_csv(doge_data_path)
+# Detect if we're in GitHub Actions
+is_ci = os.environ.get("GITHUB_ACTIONS") == "true"
+
+# Set the base directory accordingly
+if is_ci:
+    base_path = Path(os.environ["GITHUB_WORKSPACE"])
+    print("Running in GitHub Actions. Base path set to:", base_path)
+else:
+    base_path = Path(".").resolve()
+    print("Running locally. Base path set to:", base_path)
+
+# download local .csv files
+# Build paths to your data files
+rules_path = base_path / "posts" / "250215-regulations" / "federal_register_rule_counts.csv"
+doge_path = base_path / "posts" / "250215-regulations" / "regulation-data.csv"
+
+if os.path.exists(doge_path):
+    doge = pl.read_csv(doge_path)
 else:
     print("DOGE data file not available for comparison")
 
@@ -216,22 +232,6 @@ def process_regulation_data(input_file="cfr_regulations.csv", output_file="full_
 
 ```{python}
 #| label: download data
-# Detect if we're in GitHub Actions
-is_ci = os.environ.get("GITHUB_ACTIONS") == "true"
-
-# Set the base directory accordingly
-if is_ci:
-    base_path = Path(os.environ["GITHUB_WORKSPACE"])
-    print("Running in GitHub Actions. Base path set to:", base_path)
-else:
-    base_path = Path(".").resolve()
-    print("Running locally. Base path set to:", base_path)
-
-# download local .csv files
-# Build paths to your data files
-rules_path = base_path / "posts" / "250215-regulations" / "federal_register_rule_counts.csv"
-doge_path = base_path / "posts" / "250215-regulations" / "regulation-data.csv"
-
 if rules_path.exists():
     rules = pl.read_csv(rules_path)
 else:
