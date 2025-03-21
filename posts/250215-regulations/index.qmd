@@ -370,6 +370,22 @@ laws_by_year = {
 
 laws_by_year_df = pl.DataFrame({"year": list(laws_by_year.keys()), "num_laws_passed": list(laws_by_year.values())})
 
+if os.path.exists(doge_path):
+    doge = pl.read_csv(doge_path)
+else:
+    print("DOGE data file not available for comparison")
+
+    print("🧪 ENVIRONMENT VARIABLES:")
+    for k, v in os.environ.items():
+        print(f"{k}: {v}")
+
+    print("🧭 Working directory:", os.getcwd())
+    print("📁 Directory contents:")
+    for root, dirs, files in os.walk(".", topdown=True):
+        print(f"{root}/")
+        for f in files:
+            print(f"  - {f}")
+
 # Compute Unconstitutionality Index
 df_sect = (
     grouped_regs
