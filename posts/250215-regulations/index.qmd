@@ -200,6 +200,13 @@ def process_regulation_data(input_file="cfr_regulations.csv", output_file="full_
 
 ```{python}
 #| label: download data
+print("🧭 Working directory:", os.getcwd())
+print("📁 Directory contents:")
+for root, dirs, files in os.walk("."):
+    print(f"{root}/")
+    for f in files:
+        print(f"  - {f}")
+
 # download local .csv files
 rules_path = Path("posts/250215-regulations/federal_register_rule_counts.csv")
 doge_path = Path("posts/250215-regulations/regulation-data.csv")
@@ -207,23 +214,28 @@ doge_path = Path("posts/250215-regulations/regulation-data.csv")
 print("Checking rules path exists:", rules_path.exists())
 print("Checking doge path exists:", doge_path.exists())
 
-if rules_path.exists():
-    rules = pl.read_csv(rules_path)
-else:
-    print(f"Rules file not found at {rules_path}")
+try:
+  if rules_path.exists():
+      rules = pl.read_csv(rules_path)
+  else:
+      print(f"Rules file not found at {rules_path}")
 
-if doge_path.exists():
-    doge = pl.read_csv(doge_path)
-    # Google Drive file ID
-    gdrive_id = "1Re-xRy9d3jZmWOVjvC4uwyi8UChxzUIY"
-    url = f"https://drive.google.com/uc?id={gdrive_id}"
+  if doge_path.exists():
+      doge = pl.read_csv(doge_path)
+      # Google Drive file ID
+      gdrive_id = "1Re-xRy9d3jZmWOVjvC4uwyi8UChxzUIY"
+      url = f"https://drive.google.com/uc?id={gdrive_id}"
 
-    # Download and load directly into a dataframe
-    print("Downloading file into memory...")
-    temp_file = gdown.download(url, quiet=False)
-    regs = pl.read_csv(temp_file)
-else:
-    print(f"DOGE file not found at {doge_path}")
+      # Download and load directly into a dataframe
+      print("Downloading file into memory...")
+      temp_file = gdown.download(url, quiet=False)
+      regs = pl.read_csv(temp_file)
+  else:
+      print(f"DOGE file not found at {doge_path}")
+except Exception as e:
+    import traceback
+    traceback.print_exc()  # 👈 prints full error with context
+    raise e  # Re-raise so GitHub still fails the build
 
 ```
 
