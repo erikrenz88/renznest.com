@@ -37,16 +37,21 @@ from pydrive.auth import GoogleAuth
 from pydrive.drive import GoogleDrive
 from pathlib import Path
 
-print("🧪 ENVIRONMENT VARIABLES:")
-for k, v in os.environ.items():
-    print(f"{k}: {v}")
+if os.path.exists(doge_data_path):
+    doge = pl.read_csv(doge_data_path)
+else:
+    print("DOGE data file not available for comparison")
 
-print("🧭 Working directory:", os.getcwd())
-print("📁 Directory contents:")
-for root, dirs, files in os.walk(".", topdown=True):
-    print(f"{root}/")
-    for f in files:
-        print(f"  - {f}")
+    print("🧪 ENVIRONMENT VARIABLES:")
+    for k, v in os.environ.items():
+        print(f"{k}: {v}")
+
+    print("🧭 Working directory:", os.getcwd())
+    print("📁 Directory contents:")
+    for root, dirs, files in os.walk(".", topdown=True):
+        print(f"{root}/")
+        for f in files:
+            print(f"  - {f}")
 
 # Configure logging for progress tracking
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
@@ -209,7 +214,7 @@ def process_regulation_data(input_file="cfr_regulations.csv", output_file="full_
 # process_regulation_data()  # Retrieves granules & text, saves to a new CSV
 ```
 
-```{python echo: true, warning: true, error: true}
+```{python}
 #| label: download data
 # Detect if we're in GitHub Actions
 is_ci = os.environ.get("GITHUB_ACTIONS") == "true"
@@ -246,7 +251,7 @@ else:
     print(f"DOGE file not found at {doge_path}")
 ```
 
-```{python echo: true, warning: true, error: true}
+```{python}
 # Define bureaucratic and explanatory terms
 # Bureaucratic & Explanatory Terms
 bureaucratic_terms = ["shall", "must", "require", "submit", "authorize", "comply", "prohibit", "enforce", "mandatory"]
@@ -364,14 +369,6 @@ laws_by_year = {
 }
 
 laws_by_year_df = pl.DataFrame({"year": list(laws_by_year.keys()), "num_laws_passed": list(laws_by_year.values())})
-
-# Load DOGE Data (if available)
-doge_data_path = "posts/250215-regulations/regulation-data.csv"
-
-if os.path.exists(doge_data_path):
-    doge = pl.read_csv(doge_data_path)
-else:
-    print("DOGE data file not available for comparison")
 
 # Compute Unconstitutionality Index
 df_sect = (
