@@ -211,43 +211,39 @@ def process_regulation_data(input_file="cfr_regulations.csv", output_file="full_
 
 ```{python echo: true, warning: true, error: true}
 #| label: download data
-print("🧭 Working directory:", os.getcwd())
-print("📁 Directory contents:")
-for root, dirs, files in os.walk("."):
-    print(f"{root}/")
-    for f in files:
-        print(f"  - {f}")
+# Detect if we're in GitHub Actions
+is_ci = os.environ.get("GITHUB_ACTIONS") == "true"
+
+# Set the base directory accordingly
+if is_ci:
+    base_path = Path(os.environ["GITHUB_WORKSPACE"])
+    print("Running in GitHub Actions. Base path set to:", base_path)
+else:
+    base_path = Path(".").resolve()
+    print("Running locally. Base path set to:", base_path)
 
 # download local .csv files
-rules_path = Path("posts/250215-regulations/federal_register_rule_counts.csv")
-doge_path = Path("posts/250215-regulations/regulation-data.csv")
+# Build paths to your data files
+rules_path = base_path / "posts" / "250215-regulations" / "federal_register_rule_counts.csv"
+doge_path = base_path / "posts" / "250215-regulations" / "regulation-data.csv"
 
-print("Checking rules path exists:", rules_path.exists())
-print("Checking doge path exists:", doge_path.exists())
+if rules_path.exists():
+    rules = pl.read_csv(rules_path)
+else:
+    print(f"Rules file not found at {rules_path}")
 
-try:
-  if rules_path.exists():
-      rules = pl.read_csv(rules_path)
-  else:
-      print(f"Rules file not found at {rules_path}")
+if doge_path.exists():
+    doge = pl.read_csv(doge_path)
+    # Google Drive file ID
+    gdrive_id = "1Re-xRy9d3jZmWOVjvC4uwyi8UChxzUIY"
+    url = f"https://drive.google.com/uc?id={gdrive_id}"
 
-  if doge_path.exists():
-      doge = pl.read_csv(doge_path)
-      # Google Drive file ID
-      gdrive_id = "1Re-xRy9d3jZmWOVjvC4uwyi8UChxzUIY"
-      url = f"https://drive.google.com/uc?id={gdrive_id}"
-
-      # Download and load directly into a dataframe
-      print("Downloading file into memory...")
-      temp_file = gdown.download(url, quiet=False)
-      regs = pl.read_csv(temp_file)
-  else:
-      print(f"DOGE file not found at {doge_path}")
-except Exception as e:
-    import traceback
-    traceback.print_exc()  # 👈 prints full error with context
-    raise e  # Re-raise so GitHub still fails the build
-
+    # Download and load directly into a dataframe
+    print("Downloading file into memory...")
+    temp_file = gdown.download(url, quiet=False)
+    regs = pl.read_csv(temp_file)
+else:
+    print(f"DOGE file not found at {doge_path}")
 ```
 
 ```{python echo: true, warning: true, error: true}
@@ -266,38 +262,17 @@ def count_terms(text, terms):
 regs = regs.with_columns(pl.col("dateIssued").str.to_date("%Y-%m-%d").alias("dateIssued"))
 
 # Transform Data
-try:
-  regs = (
-      regs.with_columns([
-          pl.col("dateIssued").dt.year().alias("year"),  # ✅ Extract year from actual date column
-          pl.col("text").map_elements(lambda x: count_terms(x, bureaucratic_terms)).cast(pl.Int32).alias("bureaucratic_terms"),
-          pl.col("text").map_elements(lambda x: count_terms(x, explanatory_terms)).cast(pl.Int32).alias("explanatory_terms"),
-          pl.col("text").map_elements(lambda x: len(x.split()) if x else 0).cast(pl.Int32).alias("reg_word_count")  # Count words
-      ])
-      .with_columns([
-          (pl.col("bureaucratic_terms") / (pl.col("explanatory_terms") + 1)).alias("complexity_ratio")  # Avoid division by zero
-      ])
-  )
-except Exception as e:
-  print("\n❌ ERROR DURING REGULATORY TRANSFORMATION BLOCK\n")
-
-  # Print working directory and contents
-  print("🧭 Working directory:", os.getcwd())
-  print("📁 Directory contents:")
-  for root, dirs, files in os.walk("."):
-      print(f"{root}/")
-      for f in files:
-          print(f"  - {f}")
-
-  # Show whether key files exist
-  print("\n🔎 Checking file paths:")
-  print("  - federal_register_rule_counts.csv:", Path("posts/250215-regulations/federal_register_rule_counts.csv").exists())
-  print("  - regulation-data.csv:", Path("posts/250215-regulations/regulation-data.csv").exists())
-
-  # Print traceback
-  traceback.print_exc()
-  raise e 
-
+regs = (
+    regs.with_columns([
+        pl.col("dateIssued").dt.year().alias("year"),  # ✅ Extract year from actual date column
+        pl.col("text").map_elements(lambda x: count_terms(x, bureaucratic_terms)).cast(pl.Int32).alias("bureaucratic_terms"),
+        pl.col("text").map_elements(lambda x: count_terms(x, explanatory_terms)).cast(pl.Int32).alias("explanatory_terms"),
+        pl.col("text").map_elements(lambda x: len(x.split()) if x else 0).cast(pl.Int32).alias("reg_word_count")  # Count words
+    ])
+    .with_columns([
+        (pl.col("bureaucratic_terms") / (pl.col("explanatory_terms") + 1)).alias("complexity_ratio")  # Avoid division by zero
+    ])
+)
 ```
 
 ```{python}
