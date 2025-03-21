@@ -37,6 +37,17 @@ from pydrive.auth import GoogleAuth
 from pydrive.drive import GoogleDrive
 from pathlib import Path
 
+print("🧪 ENVIRONMENT VARIABLES:")
+for k, v in os.environ.items():
+    print(f"{k}: {v}")
+
+print("🧭 Working directory:", os.getcwd())
+print("📁 Directory contents:")
+for root, dirs, files in os.walk(".", topdown=True):
+    print(f"{root}/")
+    for f in files:
+        print(f"  - {f}")
+
 # Configure logging for progress tracking
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
