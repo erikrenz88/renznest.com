@@ -8,17 +8,6 @@ bluesky-comments:
 freeze: auto
 ---
 
-```{r}
-#| label: setup
-library(reticulate)
-use_python(Sys.which('python3'), required = TRUE)
-
-library(dplyr)
-library(readr)
-library(tidyr)
-library(stringr)
-```
-
 ```{python}
 #| label: set up libraries, logging, and API key
 import requests
@@ -250,9 +239,9 @@ regs = regs.with_columns(pl.col("dateIssued").str.to_date("%Y-%m-%d").alias("dat
 regs = (
     regs.with_columns([
         pl.col("dateIssued").dt.year().alias("year"),  # ✅ Extract year from actual date column
-        pl.col("text").map_elements(lambda x: count_terms(x, bureaucratic_terms, return_dtype=pl.Int32)).alias("bureaucratic_terms"),
-        pl.col("text").map_elements(lambda x: count_terms(x, explanatory_terms), return_dtype=pl.Int32).alias("explanatory_terms"),
-        pl.col("text").map_elements(lambda x: len(x.split()) if x else 0, return_dtype=pl.Int32).alias("reg_word_count")  # Count words
+        pl.col("text").map_elements(lambda x: count_terms(x, bureaucratic_terms)).cast(pl.Int32).alias("bureaucratic_terms"),
+        pl.col("text").map_elements(lambda x: count_terms(x, explanatory_terms)).cast(pl.Int32).alias("explanatory_terms"),
+        pl.col("text").map_elements(lambda x: len(x.split()) if x else 0).cast(pl.Int32).alias("reg_word_count")  # Count words
     ])
     .with_columns([
         (pl.col("bureaucratic_terms") / (pl.col("explanatory_terms") + 1)).alias("complexity_ratio")  # Avoid division by zero
@@ -361,8 +350,8 @@ else:
 # Compute Unconstitutionality Index
 df_sect = (
     grouped_regs
-    .join(laws_by_year_df, on="year", how="left")  # 🏛️ Join Laws Passed Per Year
-    .join(rules, on="year", how="left")  # 📜 Join Federal Register Rules Data
+    .join(laws_by_year_df, on="year", how="left")  # Join Laws Passed Per Year
+    .join(rules, on="year", how="left")  # Join Federal Register Rules Data
     .with_columns(
         (pl.col("rule_count") / pl.col("num_laws_passed")).alias("unconstitutionality_index")
     )
