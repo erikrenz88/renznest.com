@@ -279,7 +279,7 @@ try:
       ])
   )
 except Exception as e:
- print("\n❌ ERROR DURING REGULATORY TRANSFORMATION BLOCK\n")
+  print("\n❌ ERROR DURING REGULATORY TRANSFORMATION BLOCK\n")
 
   # Print working directory and contents
   print("🧭 Working directory:", os.getcwd())
