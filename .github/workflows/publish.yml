@@ -75,8 +75,7 @@ jobs:
       - name: 🔧 Install R Dependencies
         run: |
           Rscript -e '
-            install.packages("remotes")
-            install.packages(c("pacman", "httr", "jsonlite", "readr", "dplyr", "lubridate", "tidyr", "knitr", "rmarkdown", "stringr"))
+            install.packages(c("pacman", "readr", "dplyr", "lubridate", "tidyr", "knitr", "rmarkdown", "stringr"))
           '
           
       - name: 🔧 Install Quarto 1.6+
