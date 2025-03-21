@@ -209,7 +209,7 @@ def process_regulation_data(input_file="cfr_regulations.csv", output_file="full_
 # process_regulation_data()  # Retrieves granules & text, saves to a new CSV
 ```
 
-```{python}
+```{python echo: true, warning: true, error: true}
 #| label: download data
 print("🧭 Working directory:", os.getcwd())
 print("📁 Directory contents:")
@@ -250,7 +250,7 @@ except Exception as e:
 
 ```
 
-```{python}
+```{python echo: true, warning: true, error: true}
 # Define bureaucratic and explanatory terms
 # Bureaucratic & Explanatory Terms
 bureaucratic_terms = ["shall", "must", "require", "submit", "authorize", "comply", "prohibit", "enforce", "mandatory"]
