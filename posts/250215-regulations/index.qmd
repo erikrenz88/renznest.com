@@ -6,6 +6,13 @@ image: ""
 bluesky-comments:
     enabled: true
 freeze: auto
+execute:
+  echo: true
+  warning: true
+  message: true
+  cache: false
+  engine: python
+  jupyter: true
 ---
 
 ```{python}
@@ -42,8 +49,8 @@ GOVINFO_BASE_URL = "https://api.govinfo.gov"
 ```
 
 ```{python}
-#| label: python scripting to collect data from govinfo.gov
 #| eval: false
+#| label: python scripting to collect data from govinfo.gov
 def extract_offset_token(next_page_token):
     #Extracts and properly decodes the offsetMark token for pagination.
     if next_page_token.startswith("http"):  
