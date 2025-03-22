@@ -53,8 +53,9 @@ from pathlib import Path
 #rules_path = base_path / "posts" / "250215-regulations" / "federal_register_rule_counts.csv"
 #doge_path = base_path / "posts" / "250215-regulations" / "regulation-data.csv"
 
-rules_path = '/home/runner/work/renznest.com/renznest.com/posts/200215-regulations/federal_register_rule_counts.csv'
-doge_path = '/home/runner/work/renznest.com/renznest.com/posts/250214-regulations/regulation-data.csv'
+rules_path = Path('/home/runner/work/renznest.com/renznest.com/posts/200215-regulations/federal_register_rule_counts.csv')
+doge_path = Path('/home/runner/work/renznest.com/renznest.com/posts/250214-regulations/regulation-data.csv')
+output = 'data.csv'
 
 if os.path.exists(doge_path):
     doge = pl.read_csv(doge_path)
@@ -242,27 +243,18 @@ else:
 
 if doge_path.exists():
     doge = pl.read_csv(doge_path)
-    # Google Drive file ID
-    # Check if the file already exists to avoid re-downloading
-    file_id = "1Re-xRy9d3jZmWOVjvC4uwyi8UChxzUIY"
-    output = "large_file.csv"
 
-    # Set up authentication from GitHub Secrets
-    os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "credentials.json"
+    if not Path(output).exists():
+        print("📥 Downloading large regulations dataset from Google Drive...")
+        gdown.download(id="1Re-xRy9d3jZmWOVjvC4uwyi8UChxzUIY", output=output, quiet=False, fuzzy=True)
 
-    # local dev: load in full_regulations.csv
-    # regs = pl.read_csv('full_regulations.csv')
+    if Path(output).exists() and Path(output).stat().st_size > 0:
+        regs = pl.read_csv(output)
+    else:
+        raise FileNotFoundError("❌ Downloaded file is missing or empty!")
 
-    # Use gdown with credentials
-    gdown.download(id=file_id, output=output, quiet=False, fuzzy=True)
-    regs = pl.read_csv(output)
-
-    if not os.path.exists(output) or os.path.getsize(output) == 0:
-        raise Exception("File download failed! Check Google Drive permissions and authentication.")
-        regs = pl.read_csv('data.csv')
-    
 else:
-    print(f"DOGE file not found at {doge_path}")
+    print(f"⚠️ DOGE file not found at {doge_path}")
 ```
 
 ```{python}
