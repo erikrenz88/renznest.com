@@ -33,19 +33,15 @@ jobs:
 
       - name: 🔧 Install R Dependencies
         run: |
-          Rscript -e 'install.packages(c("httr", "jsonlite", "readr", "dplyr", "lubridate", "tidyr", "ggplot2", "googledrive", "rpolars"))'
+          Rscript -e 'install.packages(c("rmarkdown", "knitr", "httr", "jsonlite", "readr", "dplyr", "lubridate", "tidyr"))
+          '
+        
       - name: 🔧 Install Quarto 1.6+
         run: |
           wget -qO- https://quarto.org/download/latest/quarto-linux-amd64.deb > quarto.deb
           sudo dpkg -i quarto.deb
           quarto check
-      - name: 🔑 Authenticate Google Drive
-        run: |
-          echo "${{ secrets.GOOGLE_DRIVE_SA_KEY }}" > gdrive_auth.json
-          export GOOGLE_APPLICATION_CREDENTIALS=gdrive_auth.json
-      - name: 📥 Download data from Google Drive
-        run: |
-          gdown --id '1Re-xRy9d3jZmWOVjvC4uwyi8UChxzUIY' --output 'data.csv' --fuzzy
+     
       - name: 🏗 Build Quarto Website
         uses: quarto-dev/quarto-actions/render@v2
 
