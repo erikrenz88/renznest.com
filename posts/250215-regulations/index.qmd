@@ -55,7 +55,7 @@ from pathlib import Path
 
 rules_path = Path('/home/runner/work/renznest.com/renznest.com/posts/200215-regulations/federal_register_rule_counts.csv')
 doge_path = Path('/home/runner/work/renznest.com/renznest.com/posts/250214-regulations/regulation-data.csv')
-output = 'data.csv'
+regs_path = Path('/home/runner/work/renznest.com/renznest.com/data.csv')
 
 if os.path.exists(doge_path):
     doge = pl.read_csv(doge_path)
@@ -243,7 +243,7 @@ else:
 
 if doge_path.exists():
     doge = pl.read_csv(doge_path)
-    regs = pl.read_csv('data.csv')
+    regs = pl.read_csv(regs_path)
 else:
     print(f"⚠️ DOGE file not found at {doge_path}")
 ```
