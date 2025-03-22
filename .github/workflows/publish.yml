@@ -12,81 +12,41 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
-
     steps:
       - name: 🚀 Checkout Repository
         uses: actions/checkout@v4
-  
-      - name: 🧭 Check File Paths and Environment Context
-        run: |
-          echo "🔍 GITHUB_WORKSPACE: $GITHUB_WORKSPACE"
-      
-          echo ""
-          echo "📍 Moving to workspace directory..."
-          cd "$GITHUB_WORKSPACE"
-      
-          echo ""
-          echo "📂 Top-level contents of GITHUB_WORKSPACE:"
-          ls -alh
-      
-          echo ""
-          echo "📁 Recursive contents of posts/250215-regulations:"
-          ls -alh posts/250215-regulations || echo "❌ Directory not found."
-      
-          echo ""
-          echo "📄 Checking for CSV files..."
-      
-          if [ -f "$GITHUB_WORKSPACE/posts/250215-regulations/federal_register_rule_counts.csv" ]; then
-            echo "✅ Found: federal_register_rule_counts.csv"
-          else
-            echo "❌ Missing: federal_register_rule_counts.csv"
-          fi
-      
-          if [ -f "$GITHUB_WORKSPACE/posts/250215-regulations/regulation-data.csv" ]; then
-            echo "✅ Found: regulation-data.csv"
-          else
-            echo "❌ Missing: regulation-data.csv"
-          fi
-      
-          echo ""
-          echo "✅ Exporting GITHUB_WORKSPACE for Quarto or Python access..."
-          echo "GITHUB_WORKSPACE=$GITHUB_WORKSPACE" >> $GITHUB_ENV
 
       - name: 🔧 Set Up Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.10'
 
+      - name: 🔧 Install Python Dependencies
+        run: |
+          pip install -r requirements.txt  # Ensure you have a requirements.txt file
+          pip install polars gdown requests pandas matplotlib seaborn jupyter-cache
       - name: 🔧 Set Up R
         uses: r-lib/actions/setup-r@v2
         with:
           r-version: '4.3.0'  # Ensure correct R version
 
-      - name: 🛠 Install System Dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libcurl4-openssl-dev libssl-dev libxml2-dev libpng-dev python3-dev
-
-      - name: 🔧 Install Python Dependencies
-        run: |
-          pip install -r requirements.txt  # Ensure you have a requirements.txt file
-          pip install polars gdown requests pandas matplotlib seaborn jupyter-cache
-
       - name: 🔧 Install R Dependencies
         run: |
-          Rscript -e '
-            install.packages(c("pacman", "readr", "dplyr", "lubridate", "tidyr", "knitr", "rmarkdown", "stringr"))
-          '
-          
+          Rscript -e 'install.packages(c("httr", "jsonlite", "readr", "dplyr", "lubridate", "tidyr", "ggplot2", "googledrive", "rpolars"))'
       - name: 🔧 Install Quarto 1.6+
         run: |
           wget -qO- https://quarto.org/download/latest/quarto-linux-amd64.deb > quarto.deb
           sudo dpkg -i quarto.deb
           quarto check
-          
-      - name: 🏗 Build Quarto Website
+      - name: 🔑 Authenticate Google Drive
         run: |
-          quarto render --verbose 
+          echo "${{ secrets.GOOGLE_DRIVE_SA_KEY }}" > gdrive_auth.json
+          export GOOGLE_APPLICATION_CREDENTIALS=gdrive_auth.json
+      - name: 📥 Download data from Google Drive
+        run: |
+          gdown --id '1Re-xRy9d3jZmWOVjvC4uwyi8UChxzUIY' --output 'data.csv' --fuzzy
+      - name: 🏗 Build Quarto Website
+        uses: quarto-dev/quarto-actions/render@v2
 
       - name: 📤 Publish to GitHub Pages
         uses: actions/upload-pages-artifact@v3
