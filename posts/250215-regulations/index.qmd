@@ -57,22 +57,6 @@ rules_path = Path('/home/runner/work/renznest.com/renznest.com/posts/200215-regu
 doge_path = Path('/home/runner/work/renznest.com/renznest.com/posts/250214-regulations/regulation-data.csv')
 regs_path = Path('/home/runner/work/renznest.com/renznest.com/data.csv')
 
-if os.path.exists(doge_path):
-    doge = pl.read_csv(doge_path)
-else:
-    print("DOGE data file not available for comparison")
-
-    print("🧪 ENVIRONMENT VARIABLES:")
-    for k, v in os.environ.items():
-        print(f"{k}: {v}")
-
-    print("🧭 Working directory:", os.getcwd())
-    print("📁 Directory contents:")
-    for root, dirs, files in os.walk(".", topdown=True):
-        print(f"{root}/")
-        for f in files:
-            print(f"  - {f}")
-
 # Configure logging for progress tracking
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
@@ -88,146 +72,146 @@ GOVINFO_BASE_URL = "https://api.govinfo.gov"
 ```{python}
 #| eval: false
 #| label: python scripting to collect data from govinfo.gov
-def extract_offset_token(next_page_token):
-    #Extracts and properly decodes the offsetMark token for pagination.
-    if next_page_token.startswith("http"):  
-        parsed_url = urllib.parse.urlparse(next_page_token)
-        query_params = urllib.parse.parse_qs(parsed_url.query)
-        extracted_token = query_params.get("offsetMark", [""])[0]
-    else:
-        extracted_token = next_page_token  
+#def extract_offset_token(next_page_token):
+#    #Extracts and properly decodes the offsetMark token for pagination.
+#    if next_page_token.startswith("http"):  
+#        parsed_url = urllib.parse.urlparse(next_page_token)
+#        query_params = urllib.parse.parse_qs(parsed_url.query)
+#        extracted_token = query_params.get("offsetMark", [""])[0]
+#    else:
+#        extracted_token = next_page_token  
+#
+#    return urllib.parse.unquote(extracted_token)
 
-    return urllib.parse.unquote(extracted_token)
-
-def get_cfr_regulations(start_year=2012, end_year=2025, output_file="cfr_regulations.csv"):
+#def get_cfr_regulations(start_year=2012, end_year=2025, output_file="cfr_regulations.csv"):
     #Fetches all CFR regulations using pagination, streaming, and incremental file writing.
-    headers = {'Accept': 'application/json'}
+#    headers = {'Accept': 'application/json'}
     
     # Open file for streaming data storage
-    with open(output_file, "w", newline="", encoding="utf-8") as file:
-        writer = csv.writer(file)
-        writer.writerow(["packageId", "title", "dateIssued"])  # Header
+#    with open(output_file, "w", newline="", encoding="utf-8") as file:
+#        writer = csv.writer(file)
+#        writer.writerow(["packageId", "title", "dateIssued"])  # Header
 
-        for year in range(start_year, end_year + 1):
-            start_date = f"{year}-01-01T00:00:00Z"
-            end_date = f"{year}-12-31T23:59:59Z"
-            url = f"{GOVINFO_BASE_URL}/published/{start_date}/{end_date}"
-            params = {
-                "offsetMark": "*",
-                "pageSize": 100,
-                "collection": "CFR",
-                "api_key": API_KEY
-            }
+#        for year in range(start_year, end_year + 1):
+#            start_date = f"{year}-01-01T00:00:00Z"
+#            end_date = f"{year}-12-31T23:59:59Z"
+#            url = f"{GOVINFO_BASE_URL}/published/{start_date}/{end_date}"
+#            params = {
+#                "offsetMark": "*",
+#                "pageSize": 100,
+#                "collection": "CFR",
+#                "api_key": API_KEY
+#            }
 
-            logger.info(f"Fetching CFR regulations for {year}...")
+#            logger.info(f"Fetching CFR regulations for {year}...")
 
-            while True:
-                try:
-                    response = requests.get(url, params=params, headers=headers, timeout=30, stream=True)
-                    response.raise_for_status()
-                    content = response.json()
-                    packages = content.get("packages", [])
+#            while True:
+#                try:
+#                    response = requests.get(url, params=params, headers=headers, timeout=30, stream=True)
+#                    response.raise_for_status()
+#                    content = response.json()
+#                    packages = content.get("packages", [])
 
-                    if not packages:
-                        logger.warning(f"No packages found for {year}.")
-                        break
+#                    if not packages:
+#                        logger.warning(f"No packages found for {year}.")
+#                        break
 
-                    for pkg in packages:
-                        writer.writerow([pkg.get("packageId", ""), pkg.get("title", ""), pkg.get("dateIssued", "")])
+#                    for pkg in packages:
+#                        writer.writerow([pkg.get("packageId", ""), pkg.get("title", ""), pkg.get("dateIssued", "")])
 
                     # Pagination Handling
-                    if "nextPage" in content and content["nextPage"]:
-                        next_offset = extract_offset_token(content["nextPage"])
-                        if next_offset:
-                            params["offsetMark"] = next_offset
-                            time.sleep(1)
-                        else:
-                            logger.error("Failed to extract offsetMark. Stopping pagination.")
-                            break
-                    else:
-                        break  # No more pages
+#                    if "nextPage" in content and content["nextPage"]:
+#                        next_offset = extract_offset_token(content["nextPage"])
+#                        if next_offset:
+#                            params["offsetMark"] = next_offset
+#                            time.sleep(1)
+#                        else:
+#                            logger.error("Failed to extract offsetMark. Stopping pagination.")
+#                            break
+#                    else:
+#                        break  # No more pages
 
-                except requests.exceptions.RequestException as e:
-                    logger.error(f"API request failed for {year}: {e}")
-                    break  # Stop processing this year if there's an issue
+#                except requests.exceptions.RequestException as e:
+#                    logger.error(f"API request failed for {year}: {e}")
+#                    break  # Stop processing this year if there's an issue
 
-def get_cfr_agency(package_id):
+#def get_cfr_agency(package_id):
     #Fetch agency information for a given CFR package from api.govinfo.gov.
-    url = f"{GOVINFO_BASE_URL}/packages/{package_id}/summary?api_key={API_KEY}"
-    headers = {'Accept': 'application/json'}
+#    url = f"{GOVINFO_BASE_URL}/packages/{package_id}/summary?api_key={API_KEY}"
+#    headers = {'Accept': 'application/json'}
     
-    try:
-        response = requests.get(url, headers=headers, timeout=30)
-        response.raise_for_status()
-        data = response.json()
+#    try:
+#        response = requests.get(url, headers=headers, timeout=30)
+#        response.raise_for_status()
+#        data = response.json()
         
         # ✅ Agency information may be in 'organization' or 'agency' fields
-        agency = data.get("organization", data.get("agency", "Unknown Agency"))
-        return agency
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Failed to retrieve agency for package {package_id}: {e}")
-        return "Unknown Agency"
+#        agency = data.get("organization", data.get("agency", "Unknown Agency"))
+#        return agency
+#    except requests.exceptions.RequestException as e:
+#        logger.error(f"Failed to retrieve agency for package {package_id}: {e}")
+#        return "Unknown Agency"
 
-def get_granules(package_id):
+#def get_granules(package_id):
     #Fetches granules (sections) for a given regulation package.
-    url = f"{GOVINFO_BASE_URL}/packages/{package_id}/granules?offsetMark=*&pageSize=100&api_key={API_KEY}"
-    try:
-        response = requests.get(url, headers={'Accept': 'application/json'}, timeout=30)
-        response.raise_for_status()
-        return response.json().get("granules", [])
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Failed to retrieve granules for package {package_id}: {e}")
-        return []
+#    url = f"{GOVINFO_BASE_URL}/packages/{package_id}/granules?offsetMark=*&pageSize=100&api_key={API_KEY}"
+#    try:
+#        response = requests.get(url, headers={'Accept': 'application/json'}, timeout=30)
+#        response.raise_for_status()
+#        return response.json().get("granules", [])
+#    except requests.exceptions.RequestException as e:
+#        logger.error(f"Failed to retrieve granules for package {package_id}: {e}")
+#        return []
 
-def get_package_text(package_id):
+#def get_package_text(package_id):
     #Fetches full text of a regulation in TXT format if available.
-    url = f"{GOVINFO_BASE_URL}/packages/{package_id}/summary?api_key={API_KEY}"
-    try:
-        response = requests.get(url, headers={'Accept': 'application/json'}, timeout=30)
-        response.raise_for_status()
-        summary = response.json()
+#    url = f"{GOVINFO_BASE_URL}/packages/{package_id}/summary?api_key={API_KEY}"
+#    try:
+#        response = requests.get(url, headers={'Accept': 'application/json'}, timeout=30)
+#        response.raise_for_status()
+#        summary = response.json()
         
-        if "download" in summary and "txtLink" in summary["download"]:
-            txt_url = summary["download"]["txtLink"] + f"?api_key={API_KEY}"
-            response = requests.get(txt_url, headers={'Accept': 'text/plain'}, timeout=30)
-            response.raise_for_status()
-            return response.text
-        else:
-            return "No text available"
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Failed to retrieve text for package {package_id}: {e}")
-        return "No text available"
+#        if "download" in summary and "txtLink" in summary["download"]:
+#            txt_url = summary["download"]["txtLink"] + f"?api_key={API_KEY}"
+#            response = requests.get(txt_url, headers={'Accept': 'text/plain'}, timeout=30)
+#            response.raise_for_status()
+#            return response.text
+#        else:
+#            return "No text available"
+#    except requests.exceptions.RequestException as e:
+#        logger.error(f"Failed to retrieve text for package {package_id}: {e}")
+#        return "No text available"
 
-def process_regulation_data(input_file="cfr_regulations.csv", output_file="full_regulations.csv"):
+#def process_regulation_data(input_file="cfr_regulations.csv", output_file="full_regulations.csv"):
     #Processes CFR regulations: retrieves granules, full text, and agency info from api.govinfo.gov.
-    results = []
+#    results = []
     
-    df = pd.read_csv(input_file)
+#    df = pd.read_csv(input_file)
 
-    def fetch_data(row):
+#    def fetch_data(row):
         #Helper function for parallel execution.
-        package_id = row.packageId
-        text = get_package_text(package_id)
-        granules = get_granules(package_id)
+#        package_id = row.packageId
+#        text = get_package_text(package_id)
+#        granules = get_granules(package_id)
         
         # ✅ Fetch Agency Name from GovInfo API
-        agency_name = get_cfr_agency(package_id)
+#        agency_name = get_cfr_agency(package_id)
 
-        return [package_id, row.title, row.dateIssued, agency_name, text, len(granules)]
+#        return [package_id, row.title, row.dateIssued, agency_name, text, len(granules)]
 
-    logger.info(f"Processing {len(df)} CFR regulations with multi-threading...")
+#    logger.info(f"Processing {len(df)} CFR regulations with multi-threading...")
 
-    with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
-        for result in executor.map(fetch_data, df.itertuples(index=False, name="CFRRecord")):
-            results.append(result)
-            gc.collect()
+#    with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
+#        for result in executor.map(fetch_data, df.itertuples(index=False, name="CFRRecord")):
+#            results.append(result)
+#            gc.collect()
 
-    with open(output_file, "w", newline="", encoding="utf-8") as file:
-        writer = csv.writer(file)
-        writer.writerow(["packageId", "title", "dateIssued", "agency", "text", "granule_count"])
-        writer.writerows(results)
+#    with open(output_file, "w", newline="", encoding="utf-8") as file:
+#        writer = csv.writer(file)
+#        writer.writerow(["packageId", "title", "dateIssued", "agency", "text", "granule_count"])
+#        writer.writerows(results)
 
-    logger.info(f"Completed processing. Data saved to {output_file}")
+#    logger.info(f"Completed processing. Data saved to {output_file}")
 
 # get_cfr_regulations(start_year=2012, end_year=2024)  # Fetches regulations and saves to CSV
 
@@ -236,16 +220,9 @@ def process_regulation_data(input_file="cfr_regulations.csv", output_file="full_
 
 ```{python}
 #| label: download data
-if rules_path.exists():
-    rules = pl.read_csv(rules_path)
-else:
-    print(f"Rules file not found at {rules_path}")
-
-if doge_path.exists():
-    doge = pl.read_csv(doge_path)
-    regs = pl.read_csv(regs_path)
-else:
-    print(f"⚠️ DOGE file not found at {doge_path}")
+rules = pl.read_csv(rules_path)
+doge = pl.read_csv(doge_path)
+regs = pl.read_csv(regs_path)
 ```
 
 ```{python}
