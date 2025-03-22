@@ -53,8 +53,8 @@ from pathlib import Path
 #rules_path = base_path / "posts" / "250215-regulations" / "federal_register_rule_counts.csv"
 #doge_path = base_path / "posts" / "250215-regulations" / "regulation-data.csv"
 
-rules_path = Path('/home/runner/work/renznest.com/renznest.com/posts/200215-regulations/federal_register_rule_counts.csv')
-doge_path = Path('/home/runner/work/renznest.com/renznest.com/posts/250214-regulations/regulation-data.csv')
+rules_url = 'https://github.com/erikrenz88/renznest.com/blob/main/posts/250215-regulations/regulation-data.csv'
+doge_url = 'https://github.com/erikrenz88/renznest.com/blob/main/posts/250215-regulations/federal_register_rule_counts.csv'
 regs_path = Path('/home/runner/work/renznest.com/renznest.com/data.csv')
 
 # Configure logging for progress tracking
