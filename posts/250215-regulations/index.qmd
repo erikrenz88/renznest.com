@@ -57,6 +57,22 @@ rules_url = 'https://github.com/erikrenz88/renznest.com/blob/main/posts/250215-r
 doge_url = 'https://github.com/erikrenz88/renznest.com/blob/main/posts/250215-regulations/federal_register_rule_counts.csv'
 regs_path = Path('/home/runner/work/renznest.com/renznest.com/data.csv')
 
+# Check if the file already exists to avoid re-downloading
+file_id = "1Re-xRy9d3jZmWOVjvC4uwyi8UChxzUIY"
+output = "data.csv"
+
+# Set up authentication from GitHub Secrets
+os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "credentials.json"
+
+# local dev: load in full_regulations.csv
+# regs = pl.read_csv('full_regulations.csv')
+
+# Use gdown with credentials
+gdown.download(id=file_id, output=output, quiet=False, fuzzy=True)
+
+if not os.path.exists(output) or os.path.getsize(output) == 0:
+    raise Exception("File download failed! Check Google Drive permissions and authentication.")
+
 # Configure logging for progress tracking
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
@@ -222,7 +238,9 @@ GOVINFO_BASE_URL = "https://api.govinfo.gov"
 #| label: download data
 rules = pl.read_csv(rules_path)
 doge = pl.read_csv(doge_path)
-regs = pl.read_csv(regs_path)
+
+gdown.download(id=file_id, output=output, quiet=False, fuzzy=True)
+regs = pl.read_csv('data.csv')
 ```
 
 ```{python}
