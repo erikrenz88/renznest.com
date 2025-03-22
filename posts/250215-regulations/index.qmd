@@ -243,16 +243,7 @@ else:
 
 if doge_path.exists():
     doge = pl.read_csv(doge_path)
-
-    if not Path(output).exists():
-        print("📥 Downloading large regulations dataset from Google Drive...")
-        gdown.download(id="1Re-xRy9d3jZmWOVjvC4uwyi8UChxzUIY", output=output, quiet=False, fuzzy=True)
-
-    if Path(output).exists() and Path(output).stat().st_size > 0:
-        regs = pl.read_csv(output)
-    else:
-        raise FileNotFoundError("❌ Downloaded file is missing or empty!")
-
+    regs = pl.read_csv('data.csv')
 else:
     print(f"⚠️ DOGE file not found at {doge_path}")
 ```
@@ -375,22 +366,6 @@ laws_by_year = {
 }
 
 laws_by_year_df = pl.DataFrame({"year": list(laws_by_year.keys()), "num_laws_passed": list(laws_by_year.values())})
-
-if os.path.exists(doge_path):
-    doge = pl.read_csv(doge_path)
-else:
-    print("DOGE data file not available for comparison")
-
-    print("🧪 ENVIRONMENT VARIABLES:")
-    for k, v in os.environ.items():
-        print(f"{k}: {v}")
-
-    print("🧭 Working directory:", os.getcwd())
-    print("📁 Directory contents:")
-    for root, dirs, files in os.walk(".", topdown=True):
-        print(f"{root}/")
-        for f in files:
-            print(f"  - {f}")
 
 # Compute Unconstitutionality Index
 df_sect = (
