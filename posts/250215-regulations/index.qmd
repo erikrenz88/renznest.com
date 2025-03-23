@@ -52,10 +52,10 @@ from pathlib import Path
 # Build paths to your data files
 #rules_path = base_path / "posts" / "250215-regulations" / "federal_register_rule_counts.csv"
 #doge_path = base_path / "posts" / "250215-regulations" / "regulation-data.csv"
+#regs_path = Path('/home/runner/work/renznest.com/renznest.com/data.csv')
 
 rules_url = 'https://github.com/erikrenz88/renznest.com/blob/main/posts/250215-regulations/regulation-data.csv'
 doge_url = 'https://github.com/erikrenz88/renznest.com/blob/main/posts/250215-regulations/federal_register_rule_counts.csv'
-regs_path = Path('/home/runner/work/renznest.com/renznest.com/data.csv')
 
 # Check if the file already exists to avoid re-downloading
 file_id = "1Re-xRy9d3jZmWOVjvC4uwyi8UChxzUIY"
@@ -236,8 +236,8 @@ GOVINFO_BASE_URL = "https://api.govinfo.gov"
 
 ```{python}
 #| label: download data
-rules = pl.read_csv(rules_path)
-doge = pl.read_csv(doge_path)
+rules = pl.read_csv(rules_url)
+doge = pl.read_csv(doge_url)
 
 gdown.download(id=file_id, output=output, quiet=False, fuzzy=True)
 regs = pl.read_csv('data.csv')
