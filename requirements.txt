@@ -16,6 +16,7 @@ nbconvert
 nbclient
 jupyter-cache
 pathlib
+pyarrow
 
 # Google Drive Authentication & Downloading
 pydrive
