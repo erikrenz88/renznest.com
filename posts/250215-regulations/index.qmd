@@ -404,9 +404,13 @@ df_melted = (
     )
 )
 
-ojs_define(lawrule = lawrule)
-ojs_define(data = charts)
-ojs_define(yoy = df_melted)
+charts_pd = charts.to_pandas()
+lawrule_pd = lawrule.to_pandas()
+df_melted_pd = df_melted.to_pandas()
+
+ojs_define(lawrule = lawrule_pd)
+ojs_define(data = charts_pd)
+ojs_define(yoy = df_melted_pd)
 ```
 
 ::: {.callout-note title='TL;DR'}
