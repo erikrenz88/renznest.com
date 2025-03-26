@@ -7,10 +7,6 @@ bluesky-comments:
     enabled: true
 freeze: auto
 execute:
-  echo: true
-  warning: true
-  message: true
-  cache: false
   engine: python
   jupyter: true
 ---
@@ -36,6 +32,7 @@ import os
 from pydrive.auth import GoogleAuth
 from pydrive.drive import GoogleDrive
 from pathlib import Path
+import pyarrow
 
 # Detect if we're in GitHub Actions
 #is_ci = os.environ.get("GITHUB_ACTIONS") == "true"
@@ -423,9 +420,11 @@ ojs_define(yoy = df_melted_pd)
 
 ### Background
 The Department of Government Efficiency (laughably/ironically/disrespectfully, [DOGE](https://en.wikipedia.org/wiki/Doge_(meme))) was created by [Exeutive Order](https://www.whitehouse.gov/presidential-actions/2025/01/establishing-and-implementing-the-presidents-department-of-government-efficiency/) on Jan. 20 2025. The purpose is defined as:
+
 > "This Executive Order establishes the Department of Government Efficiency to implement the President’s DOGE Agenda, by modernizing Federal technology and software to maximize governmental efficiency and productivity."
 
 Currently, there is ambiguity as to the DOGE administrator as shown in the various sources and quotes in the [Wikipedia article](https://en.wikipedia.org/wiki/Department_of_Government_Efficiency#:~:text=President%20Donald%20Trump%20confirmed%20Elon,required%20of%20full%20time%20employees.):
+
 > "Trump has said that businessman Elon Musk is "in charge" of DOGE, but the White House has denied that Musk is a DOGE administrator or DOGE employee,[9][2][10] and said Musk "has no actual or formal authority to make government decisions"."
 
 The contracted organization-the true status of the organization, not actually a department of the U.S. government-released the first version of their website recently (Feb. 12 2025) attempting to make their effiency findings transparent through monies saved and an assessment of bueraucractic overreach. Many reports of the flaws in their savings analyses have been publicized but a concerning set of analysis is their regulations page which comes into focus with the [latest changes to DOGE's vision](https://www.whitehouse.gov/presidential-actions/2025/02/ensuring-lawful-governance-and-implementing-the-presidents-department-of-government-efficiency-regulatory-initiative/).
@@ -433,7 +432,7 @@ The contracted organization-the true status of the organization, not actually a 
 Seemingly, the purpose of the page is to look at the amount of regulation (rules from agencies not created by congress) compared to the laws passed by Congress. That is to say there is more government rule making than congressional (representing the people's interests). The main metrics used are word counts by agency and year, and the Unconstitutionality Index.
 
 #### Unconstitutionally Index
-This index was created by the (Competitive Enterprise Institude)[https://cei.org/opeds_articles/the-2025-unconstitutionality-index-exposing-congresss-abdication-of-power/], a nonprofit advocating for "regulatory reform on a wide range of policy issues". While a valid index, it should be treated as such-a tool to measure change in a group of representative data. It can provide a simple metric to track but does not provide full context. 
+This index was created by the [Competitive Enterprise Institude](https://cei.org/opeds_articles/the-2025-unconstitutionality-index-exposing-congresss-abdication-of-power/), a nonprofit advocating for "regulatory reform on a wide range of policy issues". While a valid index, it should be treated as such-a tool to measure change in a group of representative data. It can provide a simple metric to track but does not provide full context. 
 
 It is included in this analysis to compare the various metrics being used to asses regulatory reach. The discussion will include why metrics can only represent and should not be removed from context.
 
@@ -447,9 +446,10 @@ Regulations are agency-created rules. These are not strictly voted on by the pub
 Regulations were pulled from the GovInfo.gov API. All regulations were pulled between 2012 and 2014, looking for titles of regulations, the issued date of the regulation, and a package ID used to identify regulations and their details. Once regulations were pulled, granules (details for each regulation record) were pulled to obtain the agency that produced the regulation and text for each regulation.
 
 These were saved to .csv file stored on Google Drive due to size restrictions on GitHub. The .csv was loaded into python and the following metrics were calculated:
-    - word count: count of all individual words within the full text of the regulation;
-    - bueraucractic terms: count of all terms that described bueraucratic action ("shall", "must", "require", "submit", "authorize", "comply", "prohibit", "enforce", "mandatory"; note this list is not exhaustive but representative);
-    - complexity ratio: ratio of bureuacratic terms to explanatory terms ("for the purposes of", "defined as", "background", "explains how"; note this list is not exhaustive but representative)
+    
+  - word count: count of all individual words within the full text of the regulation;
+  - bueraucractic terms: count of all terms that described bueraucratic action ("shall", "must", "require", "submit", "authorize", "comply", "prohibit", "enforce", "mandatory"; note this list is not exhaustive but representative);
+  - complexity ratio: ratio of bureuacratic terms to explanatory terms ("for the purposes of", "defined as", "background", "explains how"; note this list is not exhaustive but representative)
 
 Percent changes year over year were calculated as:
 $$
@@ -474,6 +474,9 @@ $$
 Below is the number of rules and laws by year done with the above method.
 ```{ojs}
 //| label: chart 1
+//| echo: false 
+//| warning: false 
+//| message: false 
 Plot = import('https://cdn.jsdelivr.net/npm/@observablehq/plot@0.6.16/+esm')
 d3 = require("d3@7")
 
@@ -481,6 +484,9 @@ tlr = transpose(lawrule)
 
 // Ensure date formatting for visualization
 tlrFormatted = tlr.map(d => ({...d, year: new Date(d.year, 0, 1)}))
+
+console.log('tlr')
+console.log('tlrFormatted')
 
 // Grouped column chart (Rules & Laws per year per agency)
 Plot.plot({
@@ -500,7 +506,15 @@ Plot.plot({
     tickFormat: text => text.replace(/_/g, " ").replace(/^./, str => str.toUpperCase()) 
   },
   marks: [
-    Plot.barY(tlrFormatted, {fx: 'year', x: 'metric', y: 'value', fill: 'metric', tip: true}),
+    Plot.barY(tlrFormatted, {fx: 'year', x: 'metric', y: 'value', fill: 'metric', tip: true.
+      title: d => {
+        const names = {
+          num_laws_passed: 'Laws Passed',
+          DOGE_word_count: 'Rule Count'
+        }
+        return `${names[d.metric] || d.metric}: ${d.value.toFixed(2)}`
+      }
+    }),
     Plot.ruleY([0])
   ]
 })
@@ -536,6 +550,9 @@ rolledUpData = Array.from(
       Array.from(metrics, ([metric, value]) => ({year: new Date(year), agency, metric, value}))
     )
 ).flat(2)  // Flatten nested array structure
+
+console.log('tdata')
+console.log('rolledUpData')
 
 // get unique Agencies
 uniqueAgencies = [...new Set(rolledUpData.map(d => d.agency))];
@@ -574,7 +591,15 @@ Plot.plot({
     tickFormat: text => text.replace(/_/g, " ").replace(/^./, str => str.toUpperCase()) 
   },
   marks: [
-    Plot.barY(chart1, {fx: 'year', x: 'metric', y: 'value', fill: 'metric', tip: true}),
+    Plot.barY(chart1, {fx: 'year', x: 'metric', y: 'value', fill: 'metric', tip: true,
+      title: d => {
+        const names = {
+          total_word_count: 'Word Count',
+          DOGE_word_count: 'DOGE Word Count'
+        }
+        return `${names[d.metric] || d.metric}: ${d.value.toFixed(2)}`
+      }
+    }),
     Plot.ruleY([0])
   ]
 })
@@ -586,7 +611,13 @@ But word count alone falls short of a definition of bueruacracy, so the next cha
 
 ```{ojs}
 //| label: chart 3
+//| //| echo: false 
+//| warning: false 
+//| message: false 
 // Grouped line chart (complexity and unconstitutionality index by agency)
+
+console.log('chart2')
+
 Plot.plot({
   marginLeft: 80,
   marginBottom: 40,
@@ -603,7 +634,15 @@ Plot.plot({
     tickFormat: text => text.replace(/_/g, " ").replace(/^./, str => str.toUpperCase()) 
   },
   marks: [
-    Plot.line(chart2, {x: 'year', y: 'value', stroke: 'metric', tip: true}),
+    Plot.line(chart2, {x: 'year', y: 'value', stroke: 'metric', tip: true,
+      title: d => {
+        const names = {
+          avg_complexity_ratio: 'Complexity Ratio',
+          unconstitutionality_index: 'Unconstitutionality Index'
+        }
+        return `${names[d.metric] || d.metric}: ${d.value.toFixed(2)}`
+      }
+    }),
     Plot.ruleY([0])
   ]
 })
@@ -616,6 +655,7 @@ $$
 $$
 
 In the analysis, the text is searched for the following bureuacratic terms (terms that evoke an action):
+
 * shall
 * must
 * require
@@ -627,6 +667,7 @@ In the analysis, the text is searched for the following bureuacratic terms (term
 * mandatory
 
 Any words that match these in the text are counted and then divided by explanatory terms (terms that explain what is happening):
+
 * "for the purposes of"
 * "defined as"
 * "background"
@@ -638,9 +679,15 @@ The unconstitutionality index is shown with the complexity ratio for comparison.
 
 ```{ojs}
 //| label: chart 4
+//| //| echo: false 
+//| warning: false 
+//| message: false 
 tyoy = transpose(yoy)
 
 fyoy = tyoy.map(d => ({...d, year: new Date(d.year, 0, 1)}))
+
+console.log('tyoy')
+console.log('fyoy')
 
 // Grouped line chart (complexity and unconstitutionality index by agency)
 Plot.plot({
@@ -655,10 +702,23 @@ Plot.plot({
   color: {
     scheme: 'dark2',
     legend: true,
-    tickFormat: text => text.replace(/_/g, " ").replace(/^./, str => str.toUpperCase()) 
+    tickFormat: text =>
+      typeof text === "string"
+        ? text.replace(/_/g, " ").replace(/^./, str => str.toUpperCase())
+        : text 
   },
   marks: [
-    Plot.line(fyoy, {x: 'year', y: 'value', stroke: 'metric', tip: true}),
+    Plot.line(fyoy, {x: 'year', y: 'value', stroke: 'metric', tip: true,
+      title: d => {
+        const names = {
+          total_word_count: 'Word Count',
+          total_bureaucratic_terms: 'Bureaucractic Terms',
+          avg_complexity_ratio: 'Complexity',
+          efficiency_score: 'Efficiency Score'
+        }
+        return `${names[d.metric] || d.metric}: ${d.value.toFixed(2)}`
+      }
+    }),
     Plot.ruleY([0])
   ]
 })
