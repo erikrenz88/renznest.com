@@ -611,7 +611,7 @@ But word count alone falls short of a definition of bueruacracy, so the next cha
 
 ```{ojs}
 //| label: chart 3
-//| //| echo: false 
+//| echo: false 
 //| warning: false 
 //| message: false 
 // Grouped line chart (complexity and unconstitutionality index by agency)
@@ -679,7 +679,7 @@ The unconstitutionality index is shown with the complexity ratio for comparison.
 
 ```{ojs}
 //| label: chart 4
-//| //| echo: false 
+//| echo: false 
 //| warning: false 
 //| message: false 
 tyoy = transpose(yoy)
