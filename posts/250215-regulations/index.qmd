@@ -511,7 +511,7 @@ Plot.plot({
       title: d => {
         const names = {
           num_laws_passed: 'Laws Passed',
-          DOGE_word_count: 'Rule Count'
+          rule_count: 'Rule Count'
         }
         return `${names[d.metric] || d.metric}: ${d.value.toFixed(2)}`
       }
