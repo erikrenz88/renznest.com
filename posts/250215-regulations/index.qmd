@@ -236,7 +236,8 @@ GOVINFO_BASE_URL = "https://api.govinfo.gov"
 rules = pl.read_csv(rules_url)
 doge = pl.read_csv(doge_url)
 
-gdown.download(id=file_id, output=output, quiet=False, fuzzy=True)
+#rules = pl.read_csv('posts/250215-regulations/federal_register_rule_counts.csv')
+#doge = pl.read_csv('posts/250215-regulations/regulation-data.csv')
 regs = pl.read_csv('data.csv')
 ```
 
@@ -272,7 +273,7 @@ regs = (
 ```{python}
 # Group Data by Agency & Year
 grouped_regs = (
-    regs.group_by(["agency", "year"])
+    regs.group_by(["title", "year"])
     .agg(
         pl.sum("granule_count").alias("num_sections"),
         pl.sum("reg_word_count").alias("total_word_count"),
@@ -286,7 +287,7 @@ grouped_regs = (
 # Reshape Data: Melt DataFrame for Metric-Based Analysis
 melted_regs = (
     grouped_regs.melt(
-        id_vars=["agency", "year"],
+        id_vars=["title", "year"],
         value_vars=["total_word_count", "total_bureaucratic_terms", "avg_complexity_ratio"],
         variable_name="metric",
         value_name="value"
@@ -370,7 +371,7 @@ df_sect = (
     .join(doge, on="year", how="left")  # 🐶 Join DOGE Data
     .rename({"word_count": "DOGE_word_count"})  # Rename DOGE word count column
     .melt(
-        id_vars=["agency", "year"],  # Keep these columns fixed
+        id_vars=["title", "year"],  # Keep these columns fixed
         value_vars=[
             "total_bureaucratic_terms", "avg_complexity_ratio", "total_word_count",
             "rule_count", "num_laws_passed", "num_sections",
@@ -405,9 +406,9 @@ charts_pd = charts.to_pandas()
 lawrule_pd = lawrule.to_pandas()
 df_melted_pd = df_melted.to_pandas()
 
-ojs_define(lawrule = lawrule_pd)
-ojs_define(data = charts_pd)
-ojs_define(yoy = df_melted_pd)
+#ojs_define(lawrule = lawrule_pd)
+#ojs_define(data = charts_pd)
+#ojs_define(yoy = df_melted_pd)
 ```
 
 ::: {.callout-note title='TL;DR'}
