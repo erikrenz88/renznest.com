@@ -485,8 +485,8 @@ tlr = transpose(lawrule)
 // Ensure date formatting for visualization
 tlrFormatted = tlr.map(d => ({...d, year: new Date(d.year, 0, 1)}))
 
-console.log('tlr')
-console.log('tlrFormatted')
+console.log(tlr)
+console.log(tlrFormatted)
 
 // Grouped column chart (Rules & Laws per year per agency)
 Plot.plot({
@@ -506,7 +506,7 @@ Plot.plot({
     tickFormat: text => text.replace(/_/g, " ").replace(/^./, str => str.toUpperCase()) 
   },
   marks: [
-    Plot.barY(tlrFormatted, {fx: 'year', x: 'metric', y: 'value', fill: 'metric', tip: true.
+    Plot.barY(tlrFormatted, {fx: 'year', x: 'metric', y: 'value', fill: 'metric', tip: true,
       title: d => {
         const names = {
           num_laws_passed: 'Laws Passed',
@@ -551,8 +551,8 @@ rolledUpData = Array.from(
     )
 ).flat(2)  // Flatten nested array structure
 
-console.log('tdata')
-console.log('rolledUpData')
+console.log(tdata)
+console.log(rolledUpData)
 
 // get unique Agencies
 uniqueAgencies = [...new Set(rolledUpData.map(d => d.agency))];
@@ -616,7 +616,7 @@ But word count alone falls short of a definition of bueruacracy, so the next cha
 //| message: false 
 // Grouped line chart (complexity and unconstitutionality index by agency)
 
-console.log('chart2')
+console.log(chart2)
 
 Plot.plot({
   marginLeft: 80,
@@ -686,8 +686,8 @@ tyoy = transpose(yoy)
 
 fyoy = tyoy.map(d => ({...d, year: new Date(d.year, 0, 1)}))
 
-console.log('tyoy')
-console.log('fyoy')
+console.log(tyoy)
+console.log(fyoy)
 
 // Grouped line chart (complexity and unconstitutionality index by agency)
 Plot.plot({
