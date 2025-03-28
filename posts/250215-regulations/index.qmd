@@ -481,13 +481,8 @@ Below is the number of rules and laws by year done with the above method.
 Plot = import('https://cdn.jsdelivr.net/npm/@observablehq/plot@0.6.16/+esm')
 d3 = require("d3@7")
 
-tlr = transpose(lawrule)
-
 // Ensure date formatting for visualization
 tlrFormatted = tlr.map(d => ({...d, year: new Date(d.year, 0, 1)}))
-
-console.log(tlr)
-console.log(tlrFormatted)
 
 // Grouped column chart (Rules & Laws per year per agency)
 Plot.plot({
@@ -542,21 +537,18 @@ rolledUpData = Array.from(
   d3.rollup(
     dataFormatted, 
     v => d3.sum(v, d => d.value), 
-    d => d.year.getTime(),  // Use timestamp for grouping
-    d => d.agency,
-    d => d.metric  // Ensure metric is maintained
+    d => d.year,  
+    d => d.title,
+    d => d.metric  
   ), 
-  ([year, agencies]) => 
-    Array.from(agencies, ([agency, metrics]) => 
-      Array.from(metrics, ([metric, value]) => ({year: new Date(year), agency, metric, value}))
+  ([year, titles]) => 
+    Array.from(titles, ([title, metrics]) => 
+      Array.from(metrics, ([metric, value]) => ({year: new Date(year), title, metric, value}))
     )
 ).flat(2)  // Flatten nested array structure
 
-console.log(tdata)
-console.log(rolledUpData)
-
 // get unique Agencies
-uniqueAgencies = [...new Set(rolledUpData.map(d => d.agency))];
+uniqueAgencies = [...new Set(rolledUpData.map(d => d.title))];
 uniqueAgencies.unshift('All')
 
 // Checkbox input for agency selection
@@ -567,12 +559,14 @@ viewof agency = Inputs.select(uniqueAgencies, {
 })
 
 filtered = rolledUpData.filter(d => 
-  agency.includes('All') || agency.includes(d.agency)
+  agency.includes('All') || agency.includes(d.title)
 )
 
 chart1 = filtered.filter(d => ['total_word_count', 'DOGE_word_count'].includes(d.metric))
 
 chart2 = filtered.filter(d => ['avg_complexity_ratio', 'unconstitutionality_index'].includes(d.metric))                    
+
+console.log('chart1:', chart1)
 
 // bar chart (word count by agency)
 Plot.plot({
@@ -709,7 +703,7 @@ Plot.plot({
         : text 
   },
   marks: [
-    Plot.line(fyoy, {x: 'year', y: 'value', stroke: 'metric', tip: true,
+    Plot.line(fyoy, {x: 'year', y: 'value', stroke: 'metric_type', tip: true,
       title: d => {
         const names = {
           total_word_count: 'Word Count',
