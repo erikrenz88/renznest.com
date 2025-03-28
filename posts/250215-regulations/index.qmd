@@ -481,6 +481,8 @@ Below is the number of rules and laws by year done with the above method.
 Plot = import('https://cdn.jsdelivr.net/npm/@observablehq/plot@0.6.16/+esm')
 d3 = require("d3@7")
 
+tlr = transpose(lawrule)
+
 // Ensure date formatting for visualization
 tlrFormatted = tlr.map(d => ({...d, year: new Date(d.year, 0, 1)}))
 
@@ -495,6 +497,11 @@ Plot.plot({
   fx: {label: 'Year', tickFormat: d3.utcFormat("%Y")},
   x: {axis: null, domain: ['rule_count', 'num_laws_passed']},
   y: {label: 'Count'},
+  tip: {
+    format: {
+      y: d => Intl.NumberFormat().format(d)
+    }
+  },
   color: {
     legend: true, 
     domain: ['num_laws_passed', 'rule_count'],
@@ -538,35 +545,17 @@ rolledUpData = Array.from(
     dataFormatted, 
     v => d3.sum(v, d => d.value), 
     d => d.year,  
-    d => d.title,
     d => d.metric  
   ), 
-  ([year, titles]) => 
-    Array.from(titles, ([title, metrics]) => 
-      Array.from(metrics, ([metric, value]) => ({year: new Date(year), title, metric, value}))
-    )
-).flat(2)  // Flatten nested array structure
+  ([year, metricMap]) => 
+    Array.from(metricMap, ([metric, value]) => ({
+      year: new Date(year), 
+      metric, 
+      value
+    }))
+).flat()
 
-// get unique Agencies
-uniqueAgencies = [...new Set(rolledUpData.map(d => d.title))];
-uniqueAgencies.unshift('All')
-
-// Checkbox input for agency selection
-viewof agency = Inputs.select(uniqueAgencies, {
-    label: "Select Agencies",
-    value: ["All"],  // Default to selecting all
-    multiple: true
-})
-
-filtered = rolledUpData.filter(d => 
-  agency.includes('All') || agency.includes(d.title)
-)
-
-chart1 = filtered.filter(d => ['total_word_count', 'DOGE_word_count'].includes(d.metric))
-
-chart2 = filtered.filter(d => ['avg_complexity_ratio', 'unconstitutionality_index'].includes(d.metric))                    
-
-console.log('chart1:', chart1)
+chart1 = dataFormatted.filter(d => ['total_word_count', 'DOGE_word_count'].includes(d.metric))
 
 // bar chart (word count by agency)
 Plot.plot({
@@ -579,6 +568,11 @@ Plot.plot({
   fx: {label: 'Year', tickFormat: d3.utcFormat("%Y")},
   x: {axis: null, label: 'Year', tickFormat: d3.utcFormat("%Y")},
   y: {label: 'Regulatory Metric'},
+  tip: {
+    format: {
+      y: d => Intl.NumberFormat().format(d)
+    }
+  },
   color: {
     domain: ["total_word_count", "DOGE_word_count"],
     range: ["#EAC435", "#345995"],
@@ -611,7 +605,68 @@ But word count alone falls short of a definition of bueruacracy, so the next cha
 //| message: false 
 // Grouped line chart (complexity and unconstitutionality index by agency)
 
-console.log(chart2)
+rolledUp = Array.from(
+  d3.rollup(
+    dataFormatted, 
+    v => d3.sum(v, d => d.value), 
+    d => d.year,  
+    d => d.title,
+    d => d.metric  
+  ), 
+  ([year, titles]) => 
+    Array.from(titles, ([title, metrics]) => 
+      Array.from(metrics, ([metric, value]) => ({year: new Date(year), title, metric, value}))
+    )
+).flat(2)  // Flatten nested array structure
+
+// get unique Agencies
+uniqueAgencies = [...new Set(rolledUp.map(d => d.title))];
+uniqueAgencies.unshift('All')
+
+// Checkbox input for agency selection
+viewof agency = Inputs.select(uniqueAgencies, {
+    label: "Select Agencies",
+    value: ["All"],  // Default to selecting all
+    multiple: true
+})
+
+filtered = rolledUp.filter(d => 
+  agency.includes('All') || agency.includes(d.title)
+)
+
+words = filtered.filter(d => ['total_word_count'].includes(d.metric))
+
+chart2 = filtered.filter(d => ['avg_complexity_ratio', 'unconstitutionality_index'].includes(d.metric))           
+
+Plot.plot({
+  marginLeft: 80,
+  marginBottom: 40,
+  marginRight: 80,
+  marginTop: 40,
+  width: 960,
+  height: 500,
+  x: {label: 'Year', tickFormat: d3.utcFormat("%Y")},
+  y: {label: 'Word count'},
+  color: {
+    domain: ["total_word_count"],
+    range: ["#EAC435"],
+    legend: true,
+    tickFormat: text => text.replace(/_/g, " ").replace(/^./, str => str.toUpperCase()) 
+  },
+  marks: [
+    Plot.line(chart2, {x: 'year', y: 'value', stroke: 'metric', tip: true,
+      title: d => {
+        const names = {
+          total_word_count: 'Word count'
+        }
+        return `${names[d.metric] || d.metric}: ${d.value.toFixed(2)}`
+      }
+    }),
+    Plot.ruleY([0])
+  ]
+})
+
+console.log('chart2:', chart2)
 
 Plot.plot({
   marginLeft: 80,
@@ -622,6 +677,11 @@ Plot.plot({
   height: 500,
   x: {label: 'Year', tickFormat: d3.utcFormat("%Y")},
   y: {label: 'Regulatory Metric'},
+  tip: {
+    format: {
+      y: d => Intl.NumberFormat().format(d)
+    }
+  },
   color: {
     domain: ["avg_complexity_ratio", "unconstitutionality_index"],
     range: ["#1C949D", "#FB4D3D"],
@@ -681,9 +741,6 @@ tyoy = transpose(yoy)
 
 fyoy = tyoy.map(d => ({...d, year: new Date(d.year, 0, 1)}))
 
-console.log(tyoy)
-console.log(fyoy)
-
 // Grouped line chart (complexity and unconstitutionality index by agency)
 Plot.plot({
   marginLeft: 80,
@@ -694,6 +751,11 @@ Plot.plot({
   height: 500,
   x: {label: 'Year', tickFormat: d3.utcFormat("%Y")},
   y: {label: 'Metrics'},
+  tip: {
+    format: {
+      y: d => Intl.NumberFormat().format(d)
+    }
+  },
   color: {
     scheme: 'dark2',
     legend: true,
@@ -711,7 +773,7 @@ Plot.plot({
           avg_complexity_ratio: 'Complexity',
           efficiency_score: 'Efficiency Score'
         }
-        return `${names[d.metric] || d.metric}: ${d.value.toFixed(2)}`
+        return `${names[d.metric_type] || d.metric_type}: ${d.value.toFixed(2)}`
       }
     }),
     Plot.ruleY([0])
