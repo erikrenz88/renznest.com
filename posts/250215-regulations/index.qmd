@@ -549,7 +549,7 @@ rolledUpData = Array.from(
   ), 
   ([year, metricMap]) => 
     Array.from(metricMap, ([metric, value]) => ({
-      year: new Date(year), 
+      year, 
       metric, 
       value
     }))
@@ -580,7 +580,7 @@ Plot.plot({
     tickFormat: text => text.replace(/_/g, " ").replace(/^./, str => str.toUpperCase()) 
   },
   marks: [
-    Plot.barY(chart1, {fx: 'year', x: 'metric', y: 'value', fill: 'metric', tip: true,
+    Plot.barY(chart1, {fx: 'year', x: 'metric', y: 'value', fill: 'metric', z: 'metric', tip: true,
       title: d => {
         const names = {
           total_word_count: 'Word Count',
@@ -654,7 +654,7 @@ Plot.plot({
     tickFormat: text => text.replace(/_/g, " ").replace(/^./, str => str.toUpperCase()) 
   },
   marks: [
-    Plot.line(chart2, {x: 'year', y: 'value', stroke: 'metric', tip: true,
+    Plot.line(words, {x: 'year', y: 'value', stroke: 'metric', tip: true,
       title: d => {
         const names = {
           total_word_count: 'Word count'
@@ -665,8 +665,6 @@ Plot.plot({
     Plot.ruleY([0])
   ]
 })
-
-console.log('chart2:', chart2)
 
 Plot.plot({
   marginLeft: 80,
@@ -768,9 +766,9 @@ Plot.plot({
     Plot.line(fyoy, {x: 'year', y: 'value', stroke: 'metric_type', tip: true,
       title: d => {
         const names = {
-          total_word_count: 'Word Count',
-          total_bureaucratic_terms: 'Bureaucractic Terms',
-          avg_complexity_ratio: 'Complexity',
+          word_growth: 'Word Growth',
+          bureaucratic_change: 'Bureaucractic Change',
+          complexity_change: 'Complexity Change',
           efficiency_score: 'Efficiency Score'
         }
         return `${names[d.metric_type] || d.metric_type}: ${d.value.toFixed(2)}`
