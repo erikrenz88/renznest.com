@@ -363,15 +363,15 @@ laws_by_year_df = pl.DataFrame({"year": list(laws_by_year.keys()), "num_laws_pas
 # Compute Unconstitutionality Index
 df_sect = (
     grouped_regs
-    .join(laws_by_year_df, on="year", how="left")  # Join Laws Passed Per Year
-    .join(rules, on="year", how="left")  # Join Federal Register Rules Data
+    .join(laws_by_year_df, on="year", how="left")
+    .join(rules, on="year", how="left")
     .with_columns(
         (pl.col("rule_count") / pl.col("num_laws_passed")).alias("unconstitutionality_index")
     )
-    .join(doge, on="year", how="left")  # 🐶 Join DOGE Data
-    .rename({"word_count": "DOGE_word_count"})  # Rename DOGE word count column
+    .join(doge, on="year", how="left")
+    .rename({"word_count": "DOGE_word_count"})
     .melt(
-        id_vars=["title", "year"],  # Keep these columns fixed
+        id_vars=["title", "year"],
         value_vars=[
             "total_bureaucratic_terms", "avg_complexity_ratio", "total_word_count",
             "rule_count", "num_laws_passed", "num_sections",
@@ -379,6 +379,10 @@ df_sect = (
         ],
         variable_name="metric",
         value_name="value"
+    )
+    .with_columns(
+        # Convert year to ISO-safe string for JavaScript
+        pl.col("year").cast(pl.Int32).map_elements(lambda y: f"{y}-01-01").alias("year")
     )
 )
 
@@ -542,18 +546,21 @@ dataFormatted = tdata.map(d => ({...d, year: new Date(d.year, 0, 1)}))
 
 rolledUpData = Array.from(
   d3.rollup(
-    dataFormatted, 
-    v => d3.sum(v, d => d.value), 
-    d => d.year,  
-    d => d.metric  
-  ), 
-  ([year, metricMap]) => 
+    dataFormatted,
+    v => d3.sum(v, d => d.value),
+    d => d.year,    // "2021-01-01" (string) now
+    d => d.metric
+  ),
+  ([year, metricMap]) =>
     Array.from(metricMap, ([metric, value]) => ({
-      year, 
-      metric, 
+      year: new Date(year),     // Parse from ISO-safe string
+      title,                    // assumes `title` is scoped in
+      metric,
       value
     }))
 ).flat()
+  // Optional: sort by year then metric
+  .sort((a, b) => a.year - b.year || a.metric.localeCompare(b.metric));
 
 chart1 = dataFormatted.filter(d => ['total_word_count', 'DOGE_word_count'].includes(d.metric))
 
@@ -607,17 +614,24 @@ But word count alone falls short of a definition of bueruacracy, so the next cha
 
 rolledUp = Array.from(
   d3.rollup(
-    dataFormatted, 
-    v => d3.sum(v, d => d.value), 
-    d => d.year,  
+    dataFormatted,
+    v => d3.sum(v, d => d.value),
+    d => d.year,     // Now a string like "2021-01-01"
     d => d.title,
-    d => d.metric  
-  ), 
-  ([year, titles]) => 
-    Array.from(titles, ([title, metrics]) => 
-      Array.from(metrics, ([metric, value]) => ({year: new Date(year), title, metric, value}))
+    d => d.metric
+  ),
+  ([year, titles]) =>
+    Array.from(titles, ([title, metrics]) =>
+      Array.from(metrics, ([metric, value]) => ({
+        year: new Date(year),  // Safe parse from ISO string
+        title,
+        metric,
+        value
+      }))
     )
-).flat(2)  // Flatten nested array structure
+).flat(2)
+  // Sort to ensure line charts behave smoothly
+  .sort((a, b) => a.year - b.year || a.title.localeCompare(b.title) || a.metric.localeCompare(b.metric));
 
 // get unique Agencies
 uniqueAgencies = [...new Set(rolledUp.map(d => d.title))];
