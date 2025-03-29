@@ -396,6 +396,10 @@ lawrule = (
     .melt(id_vars=["year"], value_vars=["num_laws_passed", "rule_count"], variable_name="metric", value_name="value")
 )
 
+lawrule = lawrule.with_columns(
+  pl.col('year').cast(pl.Int32).map_elements(lambda y: f"{y}-01-01")
+)
+
 # Prepare Year-over-Year Data for Visualization
 df_melted = (
     df_results.melt(
@@ -406,12 +410,62 @@ df_melted = (
     )
 )
 
-charts_pd = charts.to_pandas()
+df_melted = df_melted.with_columns(
+  pl.col('year').cast(pl.Int32).map_elements(lambda y: f"{y}-01-01")
+)
+
+chart1 = (
+  charts
+  .group_by(['year', 'metric'])
+  .agg(pl.col('value').sum().alias('value'))
+  .sort(['year', 'metric'])
+  .filter(
+    pl.col('metric').is_in(['total_word_count', 'DOGE_word_count'])
+  )
+)
+
+chart1 = chart1.with_columns(
+  pl.col('year').cast(pl.Int32).map_elements(lambda y: f"{y}-01-01")
+)
+
+words = (
+  charts
+  .group_by(["year", "title", "metric"])
+  .agg(pl.col("value").sum().alias("value"))
+  .sort(["year", "title", "metric"])
+  .filter(
+    pl.col('metric').is_in(['total_word_count'])
+  )
+)
+
+word = word.with_columns(
+  pl.col('year').cast(pl.Int32).map_elements(lambda y: f"{y}-01-01")
+)
+
+chart2 = (
+  charts
+  .group_by(["year", "title", "metric"])
+  .agg(pl.col("value").sum().alias("value"))
+  .sort(["year", "title", "metric"])
+  .filter(
+    pl.col('metric').is_in(['avg_complexity_ratio', 'unconstitutionality_index'])
+  )
+)
+
+chart2 = chart2.with_columns(
+  pl.col('year').cast(pl.Int32).map_elements(lambda y: f"{y}-01-01")
+)
+
 lawrule_pd = lawrule.to_pandas()
+chart1_pd = chart1.to_pandas()
+word_pd = word.to_pandas()
+chart2_pd = chart2.to_pandas()
 df_melted_pd = df_melted.to_pandas()
 
 ojs_define(lawrule = lawrule_pd)
-ojs_define(data = charts_pd)
+ojs_define(chart1 = chart1_pd)
+ojs_define(word = word_pd)
+ojs_define(chart2 = chart2_pd)
 ojs_define(yoy = df_melted_pd)
 ```
 
@@ -539,30 +593,10 @@ The method to pull this information quickly and efficiently with some code uses 
 //| warning: false 
 //| message: false 
 //| label: chart 2
-tdata = transpose(data)
+tc1 = transpose(chart1)
 
 // Ensure date formatting for visualization
-dataFormatted = tdata.map(d => ({...d, year: new Date(d.year, 0, 1)}))
-
-rolledUpData = Array.from(
-  d3.rollup(
-    dataFormatted,
-    v => d3.sum(v, d => d.value),
-    d => d.year,    // "2021-01-01" (string) now
-    d => d.metric
-  ),
-  ([year, metricMap]) =>
-    Array.from(metricMap, ([metric, value]) => ({
-      year: new Date(year),     // Parse from ISO-safe string
-      title,                    // assumes `title` is scoped in
-      metric,
-      value
-    }))
-).flat()
-  // Optional: sort by year then metric
-  .sort((a, b) => a.year - b.year || a.metric.localeCompare(b.metric));
-
-chart1 = dataFormatted.filter(d => ['total_word_count', 'DOGE_word_count'].includes(d.metric))
+fc1 = tc1.map(d => ({...d, year: new Date(d.year, 0, 1)}))
 
 // bar chart (word count by agency)
 Plot.plot({
@@ -587,7 +621,7 @@ Plot.plot({
     tickFormat: text => text.replace(/_/g, " ").replace(/^./, str => str.toUpperCase()) 
   },
   marks: [
-    Plot.barY(chart1, {fx: 'year', x: 'metric', y: 'value', fill: 'metric', z: 'metric', tip: true,
+    Plot.barY(fc1, {fx: 'year', x: 'metric', y: 'value', fill: 'metric', z: 'metric', tip: true,
       title: d => {
         const names = {
           total_word_count: 'Word Count',
@@ -612,29 +646,15 @@ But word count alone falls short of a definition of bueruacracy, so the next cha
 //| message: false 
 // Grouped line chart (complexity and unconstitutionality index by agency)
 
-rolledUp = Array.from(
-  d3.rollup(
-    dataFormatted,
-    v => d3.sum(v, d => d.value),
-    d => d.year,     // Now a string like "2021-01-01"
-    d => d.title,
-    d => d.metric
-  ),
-  ([year, titles]) =>
-    Array.from(titles, ([title, metrics]) =>
-      Array.from(metrics, ([metric, value]) => ({
-        year: new Date(year),  // Safe parse from ISO string
-        title,
-        metric,
-        value
-      }))
-    )
-).flat(2)
-  // Sort to ensure line charts behave smoothly
-  .sort((a, b) => a.year - b.year || a.title.localeCompare(b.title) || a.metric.localeCompare(b.metric));
+tw = transpose(word)
+tc2 = tranpose(chart2)
+
+
+fw = tw.map(d => ({...d, year: new Date(d.year, 0, 1)}))
+fc2 = tc2.map(d => ({...d, year: new Date(d.year, 0, 1)}))
 
 // get unique Agencies
-uniqueAgencies = [...new Set(rolledUp.map(d => d.title))];
+uniqueAgencies = [...new Set(fw.map(d => d.title))];
 uniqueAgencies.unshift('All')
 
 // Checkbox input for agency selection
@@ -644,13 +664,9 @@ viewof agency = Inputs.select(uniqueAgencies, {
     multiple: true
 })
 
-filtered = rolledUp.filter(d => 
+filtered = tw.filter(d => 
   agency.includes('All') || agency.includes(d.title)
-)
-
-words = filtered.filter(d => ['total_word_count'].includes(d.metric))
-
-chart2 = filtered.filter(d => ['avg_complexity_ratio', 'unconstitutionality_index'].includes(d.metric))           
+)          
 
 Plot.plot({
   marginLeft: 80,
@@ -668,7 +684,7 @@ Plot.plot({
     tickFormat: text => text.replace(/_/g, " ").replace(/^./, str => str.toUpperCase()) 
   },
   marks: [
-    Plot.line(words, {x: 'year', y: 'value', stroke: 'metric', tip: true,
+    Plot.line(fw, {x: 'year', y: 'value', stroke: 'metric', tip: true,
       title: d => {
         const names = {
           total_word_count: 'Word count'
@@ -701,7 +717,7 @@ Plot.plot({
     tickFormat: text => text.replace(/_/g, " ").replace(/^./, str => str.toUpperCase()) 
   },
   marks: [
-    Plot.line(chart2, {x: 'year', y: 'value', stroke: 'metric', tip: true,
+    Plot.line(fc2, {x: 'year', y: 'value', stroke: 'metric', tip: true,
       title: d => {
         const names = {
           avg_complexity_ratio: 'Complexity Ratio',
