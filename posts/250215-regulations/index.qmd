@@ -2,7 +2,7 @@
 title: "Unconstitutionality"
 date: "2025-02-15"
 categories: [regulations, government, policy]
-image: "" 
+image: "image1.jpg" 
 bluesky-comments:
     enabled: true
 freeze: auto
@@ -424,10 +424,6 @@ chart1 = (
   )
 )
 
-chart1 = chart1.with_columns(
-  pl.col('year').cast(pl.Int32).map_elements(lambda y: f"{y}-01-01")
-)
-
 words = (
   charts
   .group_by(["year", "title", "metric"])
@@ -438,10 +434,6 @@ words = (
   )
 )
 
-word = word.with_columns(
-  pl.col('year').cast(pl.Int32).map_elements(lambda y: f"{y}-01-01")
-)
-
 chart2 = (
   charts
   .group_by(["year", "title", "metric"])
@@ -450,10 +442,6 @@ chart2 = (
   .filter(
     pl.col('metric').is_in(['avg_complexity_ratio', 'unconstitutionality_index'])
   )
-)
-
-chart2 = chart2.with_columns(
-  pl.col('year').cast(pl.Int32).map_elements(lambda y: f"{y}-01-01")
 )
 
 lawrule_pd = lawrule.to_pandas()
@@ -842,3 +830,6 @@ If you are going to do the job, do the job right. Before you can be efficient, y
 
 ### Conclusion
 Ultimately, there probably is work to reduce inefficiencies in regulation but I can confidently say the way that DOGE is conducting it is **not** the way to do it. This is a mess that is aimed to blindside people with large numbers, get them mad at government protocols, and stop questioning DOGE methods. I'm fairly certain the "special government employee" maybe-not-leading-but-authority-figure works off the "first principles" philosophy of approaching a problem which would require better understanding of the first step before gutting it. In short, shape up DOGE. You're being paid far too much and hurtig far too many to being doing such a bad job.
+
+###### Photo by <a href="https://unsplash.com/@onthesearchforpineapples?utm_content=creditCopyText&utm_medium=referral&utm_source=unsplash">Colin Lloyd</a> on <a href="https://unsplash.com/photos/us-a-flag-on-top-of-black-and-brown-wooden-cabinet-rfeIP9knGJs?utm_content=creditCopyText&utm_medium=referral&utm_source=unsplash">Unsplash</a>
+      
