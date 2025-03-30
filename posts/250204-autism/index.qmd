@@ -68,7 +68,7 @@ autism <- read_csv(autism_url) |>
 usa_trend <- autism |>
     filter(year_published >= 2005) |>
     filter(country == 'USA') |>
-    select(year_published, asd_prevalence_estimate_per_1_000_) |>
+    select(year_published, asd_prevalence_estimate_per_1_000) |>
     rename(
         year = year_published,
         prev = asd_prevalence_estimate_per_1_000
