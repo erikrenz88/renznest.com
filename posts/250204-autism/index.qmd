@@ -75,7 +75,7 @@ usa_trend <- autism |>
     )
 
 uk_trend <- autism |>
-    filter(Country == 'England') |>
+    filter(country == 'England') |>
     select(year_published, asd_prevalence_estimate_per_1_000) |>
     rename(
         year = year_published,
