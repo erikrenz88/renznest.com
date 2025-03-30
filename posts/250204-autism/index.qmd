@@ -58,7 +58,9 @@ pacman::p_load(
     readr
 )
 
-autism <- read_csv('autism_prevalence_studies_20250329.csv')
+autism_url = 'https://media.githubusercontent.com/media/erikrenz88/renznest.com/refs/heads/main/posts/250204-autism/autism_prevalence_studies_20250329.csv'
+
+autism <- read_csv(autism_url)
 
 usa_trend <- autism |>
     filter(`Year Published` >= 2005) |>
@@ -70,7 +72,6 @@ usa_trend <- autism |>
     )
 
 uk_trend <- autism |>
-    filter(`Year Published` >= 2005) |>
     filter(Country == 'England') |>
     select(`Year Published`, `ASD Prevalence Estimate per 1,000`) |>
     rename(
