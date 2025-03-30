@@ -56,48 +56,56 @@ pacman::p_load(
     dplyr,
     stringr,
     lubridate,
-    readr
+    readr,
+		janitor
 )
 
 autism_url = 'https://media.githubusercontent.com/media/erikrenz88/renznest.com/refs/heads/main/posts/250204-autism/autism_prevalence_studies_20250329.csv'
 
-autism <- read_csv(autism_url)
+autism <- read_csv(autism_url) |>
+		janitor::clean_names(case = 'snake')
 
 usa_trend <- autism |>
-    filter(`Year Published` >= 2005) |>
-    filter(Country == 'USA') |>
-    select(`Year Published`, `ASD Prevalence Estimate per 1,000`) |>
+    filter(year_published >= 2005) |>
+    filter(country == 'USA') |>
+    select(year_published, asd_prevalence_estimate_per_1000) |>
     rename(
-        year = `Year Published`,
-        prev = `"ASD Prevalence Estimate per 1,000"`
+        year = year_published,
+        prev = asd_prevalence_estimate_per_1000
     )
 
 uk_trend <- autism |>
     filter(Country == 'England') |>
-    select(`Year Published`, `ASD Prevalence Estimate per 1,000`) |>
+    select(year_published, asd_prevalence_estimate_per_1000) |>
     rename(
-        year = `Year Published`,
-        prev = `"ASD Prevalence Estimate per 1,000"`
+        year = year_published,
+        prev = asd_prevalence_estimate_per_1000
     )
 
 study_type <- autism |>
-    select(`Year Published`, `Case Criterion`) |>
-    separate_rows(`Case Criterion`, sep = ';') |>
-    group_by(`Year Published`, `Case Criterion`) |>
+    select(year_published, case_criterion) |>
+    separate_rows(case_criterion, sep = ';') |>
+    group_by(year_published, case_criterion) |>
     mutate(
-        `Case Criterion` = str_to_lower(`Case Criterion`)
+        case_criterion = str_to_lower(case_criterion)
     ) |>
     mutate(
-        `Case Criterion` = trimws(`Case Criterion`, 'both')
+        case_criterion = trimws(case_criterion, 'both')
     ) |>
     mutate(
-        `Case Criterion` = str_remove(`Case Criterion`, " \\(.+\\)")
+        case_criterion = str_remove(case_criterion, " \\(.+\\)")
     ) |>
     summarize(count = n()) |>
     rename(
-        year = `Year Published`,
-        case_criterion = `Case Criterion`
-    )
+        year = year_published
+    ) |>
+		mutate(
+				case_when(
+						str_like(case_criterion, '%Dsm-iii%' ~ 'Dsm-iii',
+						str_like(case_criterion, '%Dsm-iv%' ~ 'Dsm-iv',
+						.default = case_criterion
+				)
+		)
 
 ojs_define(ustrend = usa_trend)
 ojs_define(uktrend = uk_trend)
