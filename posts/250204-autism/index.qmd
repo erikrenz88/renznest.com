@@ -126,7 +126,7 @@ Plot.plot({
   marginTop: 40,
   width: 960,
   height: 500,
-  x: {label: 'Year', tickFormat: d3.utcFormat("%Y")},
+  x: {label: 'Year', type: 'utc', tickFormat: d3.utcFormat("%Y")},
   y: {label: 'ASD Prevalence Estimate per 1,000'},
   tip: {
     format: {
@@ -164,7 +164,7 @@ Plot.plot({
   marginTop: 40,
   width: 960,
   height: 500,
-  x: {label: 'Year', tickFormat: d3.utcFormat("%Y")},
+  x: {label: 'Year', type: 'utc', tickFormat: d3.utcFormat("%Y")},
   y: {label: 'ASD Prevalence Estimate per 1,000'},
   tip: {
     format: {
@@ -227,7 +227,7 @@ Plot.plot({
         : text 
   },
   marks: [
-    Plot.barY(fs, {x: 'year', y: 'count', fill: 'case_criterion', order: 'appearance', tip: true}),
+    Plot.rectY(fs, {x: 'year', y: 'count', z: 'case_criterion', interval: 'd3.utcYear', fill: 'case_criterion', order: 'appearance', tip: true}),
     Plot.ruleY([0])
   ]
 })
