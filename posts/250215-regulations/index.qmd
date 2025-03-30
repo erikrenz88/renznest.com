@@ -380,10 +380,6 @@ df_sect = (
         variable_name="metric",
         value_name="value"
     )
-    .with_columns(
-        # Convert year to ISO-safe string for JavaScript
-        pl.col("year").cast(pl.Int32).map_elements(lambda y: f"{y}-01-01").alias("year")
-    )
 )
 
 # Reshape Data for Charts
@@ -396,10 +392,6 @@ lawrule = (
     .melt(id_vars=["year"], value_vars=["num_laws_passed", "rule_count"], variable_name="metric", value_name="value")
 )
 
-lawrule = lawrule.with_columns(
-  pl.col('year').cast(pl.Int32).map_elements(lambda y: f"{y}-01-01")
-)
-
 # Prepare Year-over-Year Data for Visualization
 df_melted = (
     df_results.melt(
@@ -408,10 +400,6 @@ df_melted = (
         variable_name="metric_type",
         value_name="value"
     )
-)
-
-df_melted = df_melted.with_columns(
-  pl.col('year').cast(pl.Int32).map_elements(lambda y: f"{y}-01-01")
 )
 
 chart1 = (
@@ -541,7 +529,7 @@ Plot.plot({
   width: 960,
   height: 500,
   fx: {label: 'Year', tickFormat: d3.utcFormat("%Y")},
-  x: {axis: null, type: 'utc', domain: ['rule_count', 'num_laws_passed']},
+  x: {axis: null, domain: ['rule_count', 'num_laws_passed']},
   y: {label: 'Count'},
   tip: {
     format: {
@@ -595,7 +583,7 @@ Plot.plot({
   width: 960,
   height: 500,
   fx: {label: 'Year', tickFormat: d3.utcFormat("%Y")},
-  x: {axis: null, type: 'utc', label: 'Year', tickFormat: d3.utcFormat("%Y")},
+  x: {axis: null, domain: ['total_word_count', 'DOGE_word_count']},
   y: {label: 'Regulatory Metric'},
   tip: {
     format: {
@@ -635,7 +623,7 @@ But word count alone falls short of a definition of bueruacracy, so the next cha
 // Grouped line chart (complexity and unconstitutionality index by agency)
 
 tw = transpose(word)
-tc2 = tranpose(chart2)
+tc2 = transpose(chart2)
 
 
 fw = tw.map(d => ({...d, year: new Date(d.year, 0, 1)}))
@@ -663,7 +651,7 @@ Plot.plot({
   marginTop: 40,
   width: 960,
   height: 500,
-  x: {label: 'Year', type: 'utc', tickFormat: d3.utcFormat("%Y")},
+  x: {label: 'Year', tickFormat: d3.utcFormat("%Y")},
   y: {label: 'Word count'},
   color: {
     domain: ["total_word_count"],
@@ -691,7 +679,7 @@ Plot.plot({
   marginTop: 40,
   width: 960,
   height: 500,
-  x: {label: 'Year', type: 'utc', tickFormat: d3.utcFormat("%Y")},
+  x: {label: 'Year', tickFormat: d3.utcFormat("%Y")},
   y: {label: 'Regulatory Metric'},
   tip: {
     format: {
@@ -765,7 +753,7 @@ Plot.plot({
   marginTop: 40,
   width: 960,
   height: 500,
-  x: {label: 'Year', type: 'utc',tickFormat: d3.utcFormat("%Y")},
+  x: {label: 'Year', tickFormat: d3.utcFormat("%Y")},
   y: {label: 'Metrics'},
   tip: {
     format: {
