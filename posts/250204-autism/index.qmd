@@ -101,8 +101,8 @@ study_type <- autism |>
     ) |>
 		mutate(
 				case_when(
-						str_like(case_criterion, '%Dsm-iii%' ~ 'Dsm-iii',
-						str_like(case_criterion, '%Dsm-iv%' ~ 'Dsm-iv',
+						str_like(case_criterion, '%Dsm-iii%') ~ 'Dsm-iii',
+						str_like(case_criterion, '%Dsm-iv%') ~ 'Dsm-iv',
 						.default = case_criterion
 				)
 		)
