@@ -7,6 +7,13 @@ bluesky-comments:
     enabled: true
 ---
 
+::: {.callout-note title='TL;DR'}
+* Trump made and continues to make outrageous claims about vaccines and autism links
+* While prevalence of autism specturm disorder are on the rise, vaccinations rates are declining
+* The most likely cause of this is due to evolution in diagnostic criteria and increased testing, among other factors
+* RFK Jr., nor Trump, have any medical expertise and should not be making sweeping, errorneous, and harmful (if not lethal) statements to the public as if they were (that constitutes fraud, gentlemen)
+:::
+
 ## Hot Take
 Recently, Donald Trump posted this (to his privately held social media company), Truth Social:
 ![Truth Social Austism Post](image1.png)
@@ -31,23 +38,210 @@ or not (*my take*: he's not), I'd like to look at the facts regarding autism, it
 vaccination, and where Trump's numbers originate.
 
 ## The claim
-| year |  rate  | % change[^3] |
-|------|--------|--------------|
-| 2005 | 0.01%  |       -      |
-| 2025 | 2.90%  |  ⬆️ 28900%   |
+|  year  |   rate   | % change[^3] |
+|--------|----------|--------------|
+|  2005  |  0.0001% |       -      |
+|  2025  |  2.90%   |  ⬆️ 2899900%  |
 
 : Autism rates (per DJT) {.responsive}
 
-## The data
+An important note is that the source of Trump's claim is uncertain. The best place to find this information is through the CDC's website. While the media portrays various stances on the politics of this organization, the truth is that the people working here are dedicated to the *science* **not** the politics. Prevealence rates of Autism Spectrum Disorder (ASD) are available [here](https://www.cdc.gov/autism/data-research/index.html). In 2005, the rate was somewhere between 0.09% and 0.08% of children. This would already reduce the percent change from the staggering amount that Trump claimed (⬆️ 3122.22%, Trump's claim inflates this number by nearly 3,000,000%).
 
+## The data
+```{r}
+library(pacman)
+pacman::p_load(
+    tidyr,
+    dplyr,
+    stringr,
+    lubridate,
+    readr
+)
+
+autism <- read_csv('posts/250204-autism/autism_prevalence_studies_20250329.csv')
+
+usa_trend <- autism |>
+    filter(`Year Published` >= 2005) |>
+    filter(Country == 'USA') |>
+    select(`Year Published`, `ASD Prevalence Estimate per 1,000`) |>
+    rename(
+        year = `Year Published`,
+        prev = `ASD Prevalence Estimate per 1,000`
+    )
+
+uk_trend <- autism |>
+    filter(`Year Published` >= 2005) |>
+    filter(Country == 'England') |>
+    select(`Year Published`, `ASD Prevalence Estimate per 1,000`) |>
+    rename(
+        year = `Year Published`,
+        prev = `ASD Prevalence Estimate per 1,000`
+    )
+
+study_type <- autism |>
+    select(`Year Published`, `Case Criterion`) |>
+    separate_rows(`Case Criterion`, sep = ';') |>
+    group_by(`Year Published`, `Case Criterion`) |>
+    mutate(
+        `Case Criterion` = str_to_lower(`Case Criterion`)
+    ) |>
+    mutate(
+        `Case Criterion` = trimws(`Case Criterion`, 'both')
+    ) |>
+    mutate(
+        `Case Criterion` = str_remove(`Case Criterion`, " \\(.+\\)")
+    ) |>
+    summarize(count = n()) |>
+    rename(
+        year = `Year Published`,
+        case_criterion = `Case Criterion`
+    )
+
+ojs_define(ustrend = usa_trend)
+ojs_define(uktrend = uk_trend)
+ojs_define(study = study_type)
+```
+
+If we look at the prevalence per 1,000 only in the US, we get the following trend from available studies on prevalence of ASD:
+
+#### US ASD Prevalence Estimate per 1,000 trend based off research studies
+```{ojs}
+tt = transpose(ustrend)
+ft = tt.map(d => ({...d, year: new Date(d.year, 0, 1)}))
+
+Plot.plot({
+  marginLeft: 80,
+  marginBottom: 40,
+  marginRight: 80,
+  marginTop: 40,
+  width: 960,
+  height: 500,
+  x: {label: 'Year', tickFormat: d3.utcFormat("%Y")},
+  y: {label: 'ASD Prevalence Estimate per 1,000'},
+  tip: {
+    format: {
+      y: d => Intl.NumberFormat().format(d)
+    }
+  },
+  color: {
+    domain: ["prev"],
+    range: ["#1C949D"],
+    legend: true
+  },
+  marks: [
+    Plot.line(ft, {x: 'year', y: 'prev', stroke: 'prev', tip: true}),
+    Plot.ruleY([0])
+  ]
+})
+```
+
+Overall, we can certainly see an increase in the estimated ASD prevalence per 1,000 in the US. The reasons for this are not so clear.
 
 ## The dicsussion
+The current Secretary of HHS seems to believe that all of this prevalence is increasing due to vaccination. This is the one reason we can scientifically rule out due to the amount of testing done between when the theoretical hoax spun up (thanks to the corruption of now disgraced physician, [Andrew Wakefield](https://en.wikipedia.org/wiki/Andrew_Wakefield)). Ultimately, the theory was created to appease a lawsuit that ended with Wakefield being paid off for his erroenous and harmful statements, of which continue to make him money.
 
+One thing we can look at (though imperfect) is the estimated prevalence rates in the UK (specifically England) based off studies and look at MMR vaccination (the Measles, Mumps, Rubella vaccine; the vaccine at the heart of the autism-linked-to-vaccines disproven theory) rates in children.
+
+#### UK ASD Prevalence Estimate per 1,000 trend based off research studies
+```{ojs}
+tt1 = transpose(uktrend)
+ft1 = tt1.map(d => ({...d, year: new Date(d.year, 0, 1)}))
+
+Plot.plot({
+  marginLeft: 80,
+  marginBottom: 40,
+  marginRight: 80,
+  marginTop: 40,
+  width: 960,
+  height: 500,
+  x: {label: 'Year', tickFormat: d3.utcFormat("%Y")},
+  y: {label: 'ASD Prevalence Estimate per 1,000'},
+  tip: {
+    format: {
+      y: d => Intl.NumberFormat().format(d)
+    }
+  },
+  color: {
+    domain: ["prev"],
+    range: ["#1C949D"],
+    legend: true
+  },
+  marks: [
+    Plot.line(ft1, {x: 'year', y: 'prev', stroke: 'prev', tip: true}),
+    Plot.ruleY([0])
+  ]
+})
+```
+
+This can be compared to the below chart (data can be found [here](https://digital.nhs.uk/data-and-information/publications/statistical/nhs-immunisation-statistics)).
+
+![MMR Immunization by 2nd birthday (percent of children)](mmr.png)
+
+###### Pulled from the [2024 Childhood Immunisation Statisitcs document from UK House of Commons](https://researchbriefings.files.parliament.uk/documents/CBP-8556/CBP-8556.pdf).
+
+UK data is used due to the public health system being able to better track public health data. Disparate and politically divided state public health departments, not to mention greedy corporate entities in the like of Hospitals, Electronic Health Record Systems, and Insurers, refuse to share data to actually *improve* health, but this is a topic for another time.
+
+If rates are declining in England (which they are across all of the UK, as well as the US), and there was a true link for MMR vaccines to cause ASD, the charts, in theory, should be trending the same way. This is known as correlation. As an example, if its hot outside, ice cream sales increase. Both things rise. At the very least, we expect that if MMR vaccines increase ASD prevalence, then both of these should be going up, not one going up while one is going down. If that is the case, then the correlation would suppose that lack of MMR vaccines increases ASD...
+
+What's unknown is the cause, or causation? Do ice cream sales increase with temperature because people are hot? Is it because higher temperatures increase natrual cravings for sweet? In the case of MMR vaccines and ASD, does thimersol (a preservative to maintain integrity of vaccines) cause ASD? This was scientifically ruled out for a similar reason: ASD rates increased in studied children that did not take thiomersal-preserved vaccines. This is an example of causation, and so far, no one peddling the vaccines-lead-to-autism hoax are able to find a casual link between vaccines and ASD.
+
+Now for things that could account for the increased rise of ASD:
+
+* Ongoing environmental changes causing mutations in sex cells and leading to faulty genes/malformation during fetal development;
+* Increased surveillance for a known disorder in attempts to help prevent/treat/mitigate effects;
+* Medicine updated its methods of diagnosing (like shifting from "Autism" to "Autism Spectrum") which allows for more diagnoses to be made, more accurately.
+
+The final one is one we can visualize from CDC study data by looking at the year a study was published, and the criteria used:
+```{ojs}
+ts = transpose(study)
+fs = ts.map(d => ({...d, year: new Date(d.year, 0, 1)}))
+
+Plot.plot({
+  marginLeft: 80,
+  marginBottom: 40,
+  marginRight: 80,
+  marginTop: 40,
+  width: 960,
+  height: 500,
+  x: {label: 'Year', tickFormat: d3.utcFormat("%Y")},
+  y: {label: 'Count of studies with specific criterion'},
+  tip: {
+    format: {
+      y: d => Intl.NumberFormat().format(d)
+    }
+  },
+  color: {
+    scheme: 'dark2',
+    legend: true,
+    tickFormat: text =>
+      typeof text === "string"
+        ? text.replace(/_/g, " ").replace(/^./, str => str.toUpperCase())
+        : text 
+  },
+  marks: [
+    Plot.barY(fs, {x: 'year', y: 'count', fill: 'case_criterion', order: 'appearance', tip: true}),
+    Plot.ruleY([0])
+  ]
+})
+```
+
+Not only is there an increase in the number of studies done over time (checking more frequently to estimate prevalence), but there is also an evolution of the criteria used:
+
+* The Kanner criteria looked for two key features: servere problems in social interaction and connectedness from the beginning of life, and resistance to change/insistence on sameness;
+* The Diagnostic and Statistical Manual of Mental Disorders (DSM) 3rd edition expanded the criteria to include: qualitative impairments in recpirocal social interaction, communication, and restricted, repetitive patterns of behavior;
+* The 4th and 5th editions of the DSM noted that autism was a specturm and included: impairments in social interaction, communication, and restircted/reptetitive behaviors, with a focus on specific examples of those behaviors.
 
 ## Concluding thoughts
+There is very little credence to the dangerous and harmful claims our current Secretary of HHS makes regarding vaccines. The amount of misinformation around these life-saving measures is so abundant, the anxiety that parents experience around them is understandable, but shoudl be discussed with a licensed medical physician. 
 
+We would also do well to remember that vaccines prevent the spread of disease, and in the case of virus-borne disease, mutations that will impact many others (COVID-19 and all of its various mutations is a glaring and recent example).
 
-##### Photo by [CDC](https://unsplash.com/@cdc?utm_content=creditCopyText&utm_medium=referral&utm_source=unsplash) on [Unsplash](https://unsplash.com/photos/woman-in-black-crew-neck-t-shirt-wearing-white-face-mask-uN8TV9Pw2ik?utm_content=creditCopyText&utm_medium=referral&utm_source=unsplash)
+Oh, and let's also not forget that [Robert F. Kennedy Jr. announced his children are all vaccinated](https://www.youtube.com/shorts/ipGn3BbJJjo), and yet, in the wake of the measles outbreak in the US, [he is urging American's to consume vitamin A as an unfounded treatment](https://thehill.com/policy/healthcare/5178797-texas-measles-outbreak-kennedy-vaccines/) (he's an environmental lawyer by trade, not a medical doctor or even tangential to that).
+
+###### Photo by [CDC](https://unsplash.com/@cdc?utm_content=creditCopyText&utm_medium=referral&utm_source=unsplash) on [Unsplash](https://unsplash.com/photos/woman-in-black-crew-neck-t-shirt-wearing-white-face-mask-uN8TV9Pw2ik?utm_content=creditCopyText&utm_medium=referral&utm_source=unsplash)
+
 [^1]: https://en.wikipedia.org/wiki/Robert_F._Kennedy_Jr.
+
 [^2]: https://www.cnn.com/2024/11/21/politics/video/rfk-jr-past-trump-criticism-kfile-ebof-digvid
+
 [^3]: % change is calculated as $(Value2 - Value1)/Value1$

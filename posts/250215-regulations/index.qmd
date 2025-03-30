@@ -446,7 +446,7 @@ chart2 = (
 
 lawrule_pd = lawrule.to_pandas()
 chart1_pd = chart1.to_pandas()
-word_pd = word.to_pandas()
+word_pd = words.to_pandas()
 chart2_pd = chart2.to_pandas()
 df_melted_pd = df_melted.to_pandas()
 
