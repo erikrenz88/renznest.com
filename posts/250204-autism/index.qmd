@@ -49,6 +49,7 @@ An important note is that the source of Trump's claim is uncertain. The best pla
 
 ## The data
 ```{r}
+#| cache: false
 library(pacman)
 pacman::p_load(
     tidyr,
