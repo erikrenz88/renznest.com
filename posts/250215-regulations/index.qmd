@@ -465,7 +465,7 @@ ojs_define(yoy = df_melted_pd)
 * Next time, do better DOGE... and stop making me go to X so your "special governemnt employee" can boost his price per share. To be clear: your analysis isn't worth the $/mo, or the tissue I blew my nose in.
 :::
 
-### Background
+## Background
 The Department of Government Efficiency (laughably/ironically/disrespectfully, [DOGE](https://en.wikipedia.org/wiki/Doge_(meme))) was created by [Exeutive Order](https://www.whitehouse.gov/presidential-actions/2025/01/establishing-and-implementing-the-presidents-department-of-government-efficiency/) on Jan. 20 2025. The purpose is defined as:
 
 > "This Executive Order establishes the Department of Government Efficiency to implement the President’s DOGE Agenda, by modernizing Federal technology and software to maximize governmental efficiency and productivity."
@@ -478,16 +478,16 @@ The contracted organization-the true status of the organization, not actually a 
 
 Seemingly, the purpose of the page is to look at the amount of regulation (rules from agencies not created by congress) compared to the laws passed by Congress. That is to say there is more government rule making than congressional (representing the people's interests). The main metrics used are word counts by agency and year, and the Unconstitutionality Index.
 
-#### Unconstitutionally Index
+### Unconstitutionally Index
 This index was created by the [Competitive Enterprise Institude](https://cei.org/opeds_articles/the-2025-unconstitutionality-index-exposing-congresss-abdication-of-power/), a nonprofit advocating for "regulatory reform on a wide range of policy issues". While a valid index, it should be treated as such-a tool to measure change in a group of representative data. It can provide a simple metric to track but does not provide full context. 
 
 It is included in this analysis to compare the various metrics being used to asses regulatory reach. The discussion will include why metrics can only represent and should not be removed from context.
 
 Here, these metrics are reviewed and compared to other metrics created for the purpose of this analysis with idea generation and code assistance from generative AI tools (Claude/ChatGPT) which will be flagged where used. All code and data will be available open source for reproducibility and transparency.
 
-### Methods
+## Methods
 
-#### Regulations
+### Regulations
 Regulations are agency-created rules. These are not strictly voted on by the public and are seen by some as bureacuracy or government overreach. A counter point is that elected officials (the President, Congress) nominate and hold hearings to confirm these appointed positions (heads of the agencies) who in turn hire individuals they feel fit the qualifications - not voted on our citizen drawn up rules, but certainly reflective of the elected officials and within the expertise of those that fit the role.
 
 Regulations were pulled from the GovInfo.gov API. All regulations were pulled between 2012 and 2014, looking for titles of regulations, the issued date of the regulation, and a package ID used to identify regulations and their details. Once regulations were pulled, granules (details for each regulation record) were pulled to obtain the agency that produced the regulation and text for each regulation.
@@ -505,19 +505,19 @@ $$
 
 The next calculation was the unconstitutionality index but requires numbers of laws by year. The method for gathering these is defined next.
 
-#### Laws
+### Laws
 Laws are federal laws that are voted on within the House and Senate. These are seen to be less government overreach and more reflective of the populations desires. To provide a counter point here, the elected officials may speak to their parties by addressing their concerns and promising to uphold those in Congress, but could vote against those concerns or be lobbied in direction that suits the few instad of the many.
 
 Laws were counted from Congress.gov using the search feature for "Laws" between 2012 - 2024. Under "Legislative Action", "Laws Enacted" was selected. The specific congresses were selected by their year span and the years were mapped to congressional sessions. While innaccurate, laws were split evenly by the years of the congressional sessions (divided by 2) for a quick analysis. Improvements would be to manually count for each year that laws were passed but there is currently no automated way of collecting this data.
 
-#### Unconstitutionally Index
+### Unconstitutionally Index
 $$
 \text{Unconstitutionality Index} = \frac{n_{regulations}}{{n_{laws}}}
 $$
 
-### Results
+## Results
 
-#### Analysis findings
+### Analysis findings
 Below is the number of rules and laws by year done with the above method.
 ```{ojs}
 //| label: chart 1
@@ -541,7 +541,7 @@ Plot.plot({
   width: 960,
   height: 500,
   fx: {label: 'Year', tickFormat: d3.utcFormat("%Y")},
-  x: {axis: null, domain: ['rule_count', 'num_laws_passed']},
+  x: {axis: null, type: 'utc', domain: ['rule_count', 'num_laws_passed']},
   y: {label: 'Count'},
   tip: {
     format: {
@@ -595,7 +595,7 @@ Plot.plot({
   width: 960,
   height: 500,
   fx: {label: 'Year', tickFormat: d3.utcFormat("%Y")},
-  x: {axis: null, label: 'Year', tickFormat: d3.utcFormat("%Y")},
+  x: {axis: null, type: 'utc', label: 'Year', tickFormat: d3.utcFormat("%Y")},
   y: {label: 'Regulatory Metric'},
   tip: {
     format: {
@@ -663,7 +663,7 @@ Plot.plot({
   marginTop: 40,
   width: 960,
   height: 500,
-  x: {label: 'Year', tickFormat: d3.utcFormat("%Y")},
+  x: {label: 'Year', type: 'utc', tickFormat: d3.utcFormat("%Y")},
   y: {label: 'Word count'},
   color: {
     domain: ["total_word_count"],
@@ -691,7 +691,7 @@ Plot.plot({
   marginTop: 40,
   width: 960,
   height: 500,
-  x: {label: 'Year', tickFormat: d3.utcFormat("%Y")},
+  x: {label: 'Year', type: 'utc', tickFormat: d3.utcFormat("%Y")},
   y: {label: 'Regulatory Metric'},
   tip: {
     format: {
@@ -765,7 +765,7 @@ Plot.plot({
   marginTop: 40,
   width: 960,
   height: 500,
-  x: {label: 'Year', tickFormat: d3.utcFormat("%Y")},
+  x: {label: 'Year', type: 'utc',tickFormat: d3.utcFormat("%Y")},
   y: {label: 'Metrics'},
   tip: {
     format: {
@@ -807,9 +807,9 @@ In other words, is the change in bureacracy plus the change in the regulatory co
 
 The chart shows that through there is fluctuation depending on the year and administration, but the efficiency score is consistent over the 12 year period.
 
-### Discussion 
+## Discussion 
 
-#### Importance of context
+### Importance of context
 My biggest issue with this analysis by the DOGE team is it does not take any context into account. These agencies are highly specialized in their knowledge and, for most of the worker bees in these agencies, I am willing to bet are not acting maliciously to siphon money from the government (and certainly not in the quantities that say, government contractors might... looking at you McKinsey because others have not been brought to court yet and I believe in due process...).
 
 Another contextual consideration is the amount of complexity changing over time. As huamnity progresses, we discover new technologies, and a select few find new ways to cheat. The agencies are producing regulations to guide and combat these, respectively.
@@ -818,18 +818,18 @@ If this is absent from the analysis (which it clearly is when DOGE is only touti
 
 A specific example from the above is the number of laws to number of rules comarpison. There are a number of factors that go into both of these counts. For brevity, take the example of laws: they are passed through Congress. If there are delays to sessions or more partisan bickering, fewer laws get passed. Raw numbers alone do not provide an accurate representation. Also, one law can take a lot of time to pass (e.g. the Affordable Care Act is one law. I don't have a word count, but its 906 pages, so we can assume quite a few words.) Sometimes the reason for more words is to be thorough, not bureaucratic. Can there be efficencies? Sure. But that's not where the DOGE regulations page is aiming.
 
-#### Importance of transparency
+### Importance of transparency
 I'll cede, DOGE did post sources... sparingly. I will add that these sources are noted at the bottom with no ties back to the text or charts that are using them; furthermore, if you download the data behind the charts, there is a tidy file that shows years and counts. If you look at the githbu repo for this blog post, you can view the python code that pulls the CFR/eCFR data and you can quickly see that it is not a simple table pulled, nice and tidy, by year and word count.
 
 While they make the bare minimum attempt to be transparent, there is clearly a lack of transparency, just enough to tick a box but not enough for a reproducibility exercise. If you want to be transparent and open to dsicussion about a topic, you include your work and sources. If you want to placate and weave Rumpelstiltskin type thread of golden garbage, you leave everything out.
 
-#### Lack of expertise
+### Lack of expertise
 On the topic of transparency, we don't know all of the lovely individuals working in DOGE. But given the timing of the website release and the [news that was present at the time](https://projects.propublica.org/elon-musk-doge-tracker/), the *software engineers* they hired with, from what I could tell, no real-world data experience, are not capable of producing any quality analysis.
 
 If you are going to do the job, do the job right. Before you can be efficient, you have to understand what's going on in full. That's what an analyst does - collects the data, intergates it, tells the story, and makes recommendations. Speaking as an analyst, this is sloppy, unprofessional, and a bit offensive (and I'm a white Christian heterosexual male so no DEI comments, thanks).
 
-### Conclusion
+## Conclusion
 Ultimately, there probably is work to reduce inefficiencies in regulation but I can confidently say the way that DOGE is conducting it is **not** the way to do it. This is a mess that is aimed to blindside people with large numbers, get them mad at government protocols, and stop questioning DOGE methods. I'm fairly certain the "special government employee" maybe-not-leading-but-authority-figure works off the "first principles" philosophy of approaching a problem which would require better understanding of the first step before gutting it. In short, shape up DOGE. You're being paid far too much and hurtig far too many to being doing such a bad job.
 
-###### Photo by <a href="https://unsplash.com/@onthesearchforpineapples?utm_content=creditCopyText&utm_medium=referral&utm_source=unsplash">Colin Lloyd</a> on <a href="https://unsplash.com/photos/us-a-flag-on-top-of-black-and-brown-wooden-cabinet-rfeIP9knGJs?utm_content=creditCopyText&utm_medium=referral&utm_source=unsplash">Unsplash</a>
+Photo by <a href="https://unsplash.com/@onthesearchforpineapples?utm_content=creditCopyText&utm_medium=referral&utm_source=unsplash">Colin Lloyd</a> on <a href="https://unsplash.com/photos/us-a-flag-on-top-of-black-and-brown-wooden-cabinet-rfeIP9knGJs?utm_content=creditCopyText&utm_medium=referral&utm_source=unsplash">Unsplash</a>
       
