@@ -68,18 +68,18 @@ autism <- read_csv(autism_url) |>
 usa_trend <- autism |>
     filter(year_published >= 2005) |>
     filter(country == 'USA') |>
-    select(year_published, asd_prevalence_estimate_per_1000) |>
+    select(year_published, asd_prevalence_estimate_per_1_000_) |>
     rename(
         year = year_published,
-        prev = asd_prevalence_estimate_per_1000
+        prev = asd_prevalence_estimate_per_1_000
     )
 
 uk_trend <- autism |>
     filter(Country == 'England') |>
-    select(year_published, asd_prevalence_estimate_per_1000) |>
+    select(year_published, asd_prevalence_estimate_per_1_000) |>
     rename(
         year = year_published,
-        prev = asd_prevalence_estimate_per_1000
+        prev = asd_prevalence_estimate_per_1_000
     )
 
 study_type <- autism |>
@@ -102,7 +102,7 @@ study_type <- autism |>
 		mutate(
 				case_when(
 						str_like(case_criterion, '%Dsm-iii%') ~ 'Dsm-iii',
-						str_like(case_criterion, '%Dsm-iv%') ~ 'Dsm-iv',
+						str_like(case_criterion, '%Dsm-iv%')  ~ 'Dsm-iv',
 						.default = case_criterion
 				)
 		)
