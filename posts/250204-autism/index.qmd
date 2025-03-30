@@ -1,5 +1,5 @@
 ---
-title: "M"
+title: "Autism"
 date: "2025-02-04"
 categories: [autism, vaccines, news]
 image: "thumbnail.jpg" 
@@ -69,7 +69,7 @@ usa_trend <- autism |>
     select(`Year Published`, `ASD Prevalence Estimate per 1,000`) |>
     rename(
         year = `Year Published`,
-        prev = `ASD Prevalence Estimate per 1,000`
+        prev = `"ASD Prevalence Estimate per 1,000"`
     )
 
 uk_trend <- autism |>
@@ -77,7 +77,7 @@ uk_trend <- autism |>
     select(`Year Published`, `ASD Prevalence Estimate per 1,000`) |>
     rename(
         year = `Year Published`,
-        prev = `ASD Prevalence Estimate per 1,000`
+        prev = `"ASD Prevalence Estimate per 1,000"`
     )
 
 study_type <- autism |>
@@ -106,7 +106,7 @@ ojs_define(study = study_type)
 
 If we look at the prevalence per 1,000 only in the US, we get the following trend from available studies on prevalence of ASD:
 
-#### US ASD Prevalence Estimate per 1,000 trend based off research studies
+### US ASD Prevalence Estimate per 1,000 trend based off research studies
 ```{ojs}
 tt = transpose(ustrend)
 ft = tt.map(d => ({...d, year: new Date(d.year, 0, 1)}))
@@ -139,12 +139,12 @@ Plot.plot({
 
 Overall, we can certainly see an increase in the estimated ASD prevalence per 1,000 in the US. The reasons for this are not so clear.
 
-## The dicsussion
+## The discussion
 The current Secretary of HHS seems to believe that all of this prevalence is increasing due to vaccination. This is the one reason we can scientifically rule out due to the amount of testing done between when the theoretical hoax spun up (thanks to the corruption of now disgraced physician, [Andrew Wakefield](https://en.wikipedia.org/wiki/Andrew_Wakefield)). Ultimately, the theory was created to appease a lawsuit that ended with Wakefield being paid off for his erroenous and harmful statements, of which continue to make him money.
 
 One thing we can look at (though imperfect) is the estimated prevalence rates in the UK (specifically England) based off studies and look at MMR vaccination (the Measles, Mumps, Rubella vaccine; the vaccine at the heart of the autism-linked-to-vaccines disproven theory) rates in children.
 
-#### UK ASD Prevalence Estimate per 1,000 trend based off research studies
+### UK ASD Prevalence Estimate per 1,000 trend based off research studies
 ```{ojs}
 tt1 = transpose(uktrend)
 ft1 = tt1.map(d => ({...d, year: new Date(d.year, 0, 1)}))
@@ -177,9 +177,7 @@ Plot.plot({
 
 This can be compared to the below chart (data can be found [here](https://digital.nhs.uk/data-and-information/publications/statistical/nhs-immunisation-statistics)).
 
-![MMR Immunization by 2nd birthday (percent of children)](mmr.png)
-
-###### Pulled from the [2024 Childhood Immunisation Statisitcs document from UK House of Commons](https://researchbriefings.files.parliament.uk/documents/CBP-8556/CBP-8556.pdf).
+![MMR Immunization by 2nd birthday (percent of children)](mmr.png). Pulled from the [2024 Childhood Immunisation Statisitcs document from UK House of Commons](https://researchbriefings.files.parliament.uk/documents/CBP-8556/CBP-8556.pdf). {fig-alt="A chart depicting MMR vaccination rates for countries in the United Kingdom between 1997 and 2024. All rates show a steady decline from 2012 to present."}
 
 UK data is used due to the public health system being able to better track public health data. Disparate and politically divided state public health departments, not to mention greedy corporate entities in the like of Hospitals, Electronic Health Record Systems, and Insurers, refuse to share data to actually *improve* health, but this is a topic for another time.
 
@@ -205,7 +203,7 @@ Plot.plot({
   marginTop: 40,
   width: 960,
   height: 500,
-  x: {label: 'Year', tickFormat: d3.utcFormat("%Y")},
+  x: {label: 'Year', tickFormat: d3.utcFormat("%Y"), tickRotate: -45},
   y: {label: 'Count of studies with specific criterion'},
   tip: {
     format: {
@@ -242,8 +240,8 @@ Oh, and let's also not forget that [Robert F. Kennedy Jr. announced his children
 
 ###### Photo by [CDC](https://unsplash.com/@cdc?utm_content=creditCopyText&utm_medium=referral&utm_source=unsplash) on [Unsplash](https://unsplash.com/photos/woman-in-black-crew-neck-t-shirt-wearing-white-face-mask-uN8TV9Pw2ik?utm_content=creditCopyText&utm_medium=referral&utm_source=unsplash)
 
-[^1]: https://en.wikipedia.org/wiki/Robert_F._Kennedy_Jr.
+[^1]: (https://en.wikipedia.org/wiki/Robert_F._Kennedy_Jr.)
 
-[^2]: https://www.cnn.com/2024/11/21/politics/video/rfk-jr-past-trump-criticism-kfile-ebof-digvid
+[^2]: (https://www.cnn.com/2024/11/21/politics/video/rfk-jr-past-trump-criticism-kfile-ebof-digvid)
 
-[^3]: % change is calculated as $(Value2 - Value1)/Value1$
+[^3]: % change is calculated as $(Value^2 - Value^1)/Value^1$
