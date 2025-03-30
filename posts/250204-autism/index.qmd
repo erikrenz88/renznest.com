@@ -252,4 +252,4 @@ Oh, and let's also not forget that [Robert F. Kennedy Jr. announced his children
 
 [^2]: (https://www.cnn.com/2024/11/21/politics/video/rfk-jr-past-trump-criticism-kfile-ebof-digvid)
 
-[^3]: % change is calculated as $(Value^2 - Value^1)/Value^1$
+[^3]: % change is calculated as $(Value_2 - Value_1)/Value_1$
