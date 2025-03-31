@@ -8,10 +8,10 @@ bluesky-comments:
 ---
 
 ::: {.callout-note title='TL;DR'}
-* Trump made and continues to make outrageous claims about vaccines and autism links
+* Trump made, and continues to make, outrageous claims about vaccines and autism links
 * While prevalence of autism specturm disorder are on the rise, vaccinations rates are declining
-* The most likely cause of this is due to evolution in diagnostic criteria and increased testing, among other factors
-* RFK Jr., nor Trump, have any medical expertise and should not be making sweeping, errorneous, and harmful (if not lethal) statements to the public as if they were (that constitutes fraud, gentlemen)
+* The most likely cause of this is due to improvements in identifying autism and increased testing, among other factors
+* RFK Jr., nor Trump, have any medical expertise and should not be making sweeping, errorneous, and harmful (if not lethal) statements to the public as if they were medical experts (that constitutes fraud, gentlemen)
 :::
 
 ## Hot Take
@@ -21,7 +21,7 @@ Recently, Donald Trump posted this (to his privately held social media company),
 The intent is to bolster support for his Secretary of Health and Human Services pick, Robert F. Kennedy Jr.
 
 ### Some context
-RFK Jr. has a fairly predictable political pattern. As an environmental lawyer, Kennedy fought hard to keep waters 
+RFK Jr. has a fairly predictable political past. As an environmental lawyer, Kennedy fought hard to keep waters 
 clean and to move towards renewable energy. He fought against further development of pipelines, sued gas companies, 
 and fought fracking.[^1] There is also a painted past for the Democractic party and quotes reflecting poorly of Donald
 Trump's first presidency.[^2]
@@ -187,11 +187,11 @@ This can be compared to the below chart (data can be found [here](https://digita
 
 ![MMR Immunization by 2nd birthday (percent of children)](mmr.png). Pulled from the [2024 Childhood Immunisation Statisitcs document from UK House of Commons](https://researchbriefings.files.parliament.uk/documents/CBP-8556/CBP-8556.pdf). {fig-alt="A chart depicting MMR vaccination rates for countries in the United Kingdom between 1997 and 2024. All rates show a steady decline from 2012 to present."}
 
-UK data is used due to the public health system being able to better track public health data. Disparate and politically divided state public health departments, not to mention greedy corporate entities in the like of Hospitals, Electronic Health Record Systems, and Insurers, refuse to share data to actually *improve* health, but this is a topic for another time.
+UK data is used due to the public health system being able to better track public health data. Disparate and politically divided state public health departments, not to mention greedy corporate entities in the likes of Hospitals, Electronic Health Record Systems, and Insurers, refuse to share data to actually *improve* health, but this is a topic for another time.
 
 If rates are declining in England (which they are across all of the UK, as well as the US), and there was a true link for MMR vaccines to cause ASD, the charts, in theory, should be trending the same way. This is known as correlation. As an example, if its hot outside, ice cream sales increase. Both things rise. At the very least, we expect that if MMR vaccines increase ASD prevalence, then both of these should be going up, not one going up while one is going down. If that is the case, then the correlation would suppose that lack of MMR vaccines increases ASD...
 
-What's unknown is the cause, or causation? Do ice cream sales increase with temperature because people are hot? Is it because higher temperatures increase natrual cravings for sweet? In the case of MMR vaccines and ASD, does thimersol (a preservative to maintain integrity of vaccines) cause ASD? This was scientifically ruled out for a similar reason: ASD rates increased in studied children that did not take thiomersal-preserved vaccines. This is an example of causation, and so far, no one peddling the vaccines-lead-to-autism hoax are able to find a casual link between vaccines and ASD.
+What's unknown is the cause, or causation. Do ice cream sales increase with temperature because people are hot? Is it because higher temperatures increase natrual cravings for sweet? In the case of MMR vaccines and ASD, does thimersol (a preservative to maintain integrity of vaccines) cause ASD? This was scientifically ruled out for a similar reason: ASD rates increased in studied children that did not take thiomersal-preserved vaccines. This is an example of causation, and so far, no one peddling the vaccines-lead-to-autism hoax are able to find a casual link between vaccines and ASD.
 
 Now for things that could account for the increased rise of ASD:
 
@@ -227,7 +227,7 @@ Plot.plot({
         : text 
   },
   marks: [
-    Plot.rectY(fs, {x: 'year', y: 'count', z: 'case_criterion', interval: 'd3.utcYear', fill: 'case_criterion', order: 'appearance', tip: true}),
+    Plot.barY(fs, {x: 'year', y: 'count', z: 'case_criterion', interval: 1, fill: 'case_criterion', tip: true}),
     Plot.ruleY([0])
   ]
 })
@@ -240,9 +240,9 @@ Not only is there an increase in the number of studies done over time (checking 
 * The 4th and 5th editions of the DSM noted that autism was a specturm and included: impairments in social interaction, communication, and restircted/reptetitive behaviors, with a focus on specific examples of those behaviors.
 
 ## Concluding thoughts
-There is very little credence to the dangerous and harmful claims our current Secretary of HHS makes regarding vaccines. The amount of misinformation around these life-saving measures is so abundant, the anxiety that parents experience around them is understandable, but shoudl be discussed with a licensed medical physician. 
+There is very little credence to the dangerous and harmful claims our current Secretary of HHS makes regarding vaccines. The amount of misinformation around these life-saving measures is so abundant, the anxiety that parents experience around them is understandable, but should be discussed with a licensed medical professional. 
 
-We would also do well to remember that vaccines prevent the spread of disease, and in the case of virus-borne disease, mutations that will impact many others (COVID-19 and all of its various mutations is a glaring and recent example).
+We would also do well to remember that vaccines prevent the spread of disease, and in the case of virus-borne disease, mutations, that will impact many others (COVID-19 and all of its various mutations is a glaring and recent example).
 
 Oh, and let's also not forget that [Robert F. Kennedy Jr. announced his children are all vaccinated](https://www.youtube.com/shorts/ipGn3BbJJjo), and yet, in the wake of the measles outbreak in the US, [he is urging American's to consume vitamin A as an unfounded treatment](https://thehill.com/policy/healthcare/5178797-texas-measles-outbreak-kennedy-vaccines/) (he's an environmental lawyer by trade, not a medical doctor or even tangential to that).
 
