@@ -272,7 +272,7 @@ regs = (
 
 ```{python}
 # Group Data by Agency & Year
-grouped_regs = (
+title_grouped_regs = (
     regs.group_by(["title", "year"])
     .agg(
         pl.sum("granule_count").alias("num_sections"),
@@ -281,16 +281,14 @@ grouped_regs = (
         pl.mean("complexity_ratio").alias("avg_complexity_ratio")
     )
 )
-```
 
-```{python}
-# Reshape Data: Melt DataFrame for Metric-Based Analysis
-melted_regs = (
-    grouped_regs.melt(
-        id_vars=["title", "year"],
-        value_vars=["total_word_count", "total_bureaucratic_terms", "avg_complexity_ratio"],
-        variable_name="metric",
-        value_name="value"
+year_grouped_regs = (
+    regs.group_by(["year"])
+    .agg(
+        pl.sum("granule_count").alias("num_sections"),
+        pl.sum("reg_word_count").alias("total_word_count"),
+        pl.sum("bureaucratic_terms").alias("total_bureaucratic_terms"),
+        pl.mean("complexity_ratio").alias("avg_complexity_ratio")
     )
 )
 ```
@@ -360,36 +358,70 @@ laws_by_year = {
 
 laws_by_year_df = pl.DataFrame({"year": list(laws_by_year.keys()), "num_laws_passed": list(laws_by_year.values())})
 
-# Compute Unconstitutionality Index
-df_sect = (
-    grouped_regs
-    .join(laws_by_year_df, on="year", how="left")
-    .join(rules, on="year", how="left")
-    .with_columns(
-        (pl.col("rule_count") / pl.col("num_laws_passed")).alias("unconstitutionality_index")
-    )
-    .join(doge, on="year", how="left")
-    .rename({"word_count": "DOGE_word_count"})
-    .melt(
-        id_vars=["title", "year"],
-        value_vars=[
-            "total_bureaucratic_terms", "avg_complexity_ratio", "total_word_count",
-            "rule_count", "num_laws_passed", "num_sections",
-            "unconstitutionality_index", "DOGE_word_count", "regulation_count"
-        ],
-        variable_name="metric",
-        value_name="value"
-    )
-)
-
-# Reshape Data for Charts
-charts = df_sect
-
 # Laws and Rules Charts
 lawrule = (
     laws_by_year_df
     .join(rules, on="year", how="inner")
     .melt(id_vars=["year"], value_vars=["num_laws_passed", "rule_count"], variable_name="metric", value_name="value")
+)
+
+# Word and DOGE word chart
+chart1 = (
+	year_grouped_regs
+	.join(doge, on='year', how='inner')
+	.rename({"word_count": "DOGE_word_count"})
+	.melt(
+        id_vars=["year"],
+        value_vars=[
+            "total_bureaucratic_terms", "avg_complexity_ratio", "total_word_count", 
+					"num_sections", "DOGE_word_count"
+        ],
+        variable_name="metric",
+        value_name="value"
+    )
+	.filter(
+    pl.col('metric').is_in(['total_word_count', 'DOGE_word_count'])
+  )
+)
+
+# Word count by title
+words = (
+	title_grouped_regs
+	.melt(
+        id_vars=["title", "year"],
+        value_vars=[
+            "total_bureaucratic_terms", "avg_complexity_ratio", "total_word_count", 
+					"num_sections"
+        ],
+        variable_name="metric",
+        value_name="value"
+    )
+	.filter(
+    pl.col('metric').is_in(['total_word_count', 'DOGE_word_count'])
+  )
+)
+
+# Avg Complexity and Unconstitutionality chart
+chart2 = (
+	year_grouped_regs
+	.join(laws_by_year_df, on="year", how="left")
+	.join(rules, on="year", how="left")
+	.with_columns(
+     (pl.col("rule_count") / pl.col("num_laws_passed")).alias("unconstitutionality_index")
+  )
+	.melt(
+        id_vars=["year"],
+        value_vars=[
+            "total_bureaucratic_terms", "avg_complexity_ratio", "total_word_count",
+            "rule_count", "num_laws_passed", "num_sections",
+            "unconstitutionality_index"
+        ],
+        variable_name="metric",
+        value_name="value"
+  )
+	.filter(
+    pl.col('metric').is_in(['avg_complexity_ratio', 'unconstitutionality_index'])
+  )
 )
 
 # Prepare Year-over-Year Data for Visualization
@@ -400,27 +432,6 @@ df_melted = (
         variable_name="metric_type",
         value_name="value"
     )
-)
-
-chart1 = (
-  charts
-  .filter(
-    pl.col('metric').is_in(['total_word_count', 'DOGE_word_count'])
-  )
-)
-
-words = (
-  charts
-  .filter(
-    pl.col('metric').is_in(['total_word_count'])
-  )
-)
-
-chart2 = (
-  charts
-  .filter(
-    pl.col('metric').is_in(['avg_complexity_ratio', 'unconstitutionality_index'])
-  )
 )
 
 lawrule_pd = lawrule.to_pandas()
