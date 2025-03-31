@@ -404,9 +404,6 @@ df_melted = (
 
 chart1 = (
   charts
-  .group_by(['year', 'metric'])
-  .agg(pl.col('value').sum().alias('value'))
-  .sort(['year', 'metric'])
   .filter(
     pl.col('metric').is_in(['total_word_count', 'DOGE_word_count'])
   )
@@ -414,9 +411,6 @@ chart1 = (
 
 words = (
   charts
-  .group_by(["year", "title", "metric"])
-  .agg(pl.col("value").sum().alias("value"))
-  .sort(["year", "title", "metric"])
   .filter(
     pl.col('metric').is_in(['total_word_count'])
   )
@@ -424,9 +418,6 @@ words = (
 
 chart2 = (
   charts
-  .group_by(["year", "title", "metric"])
-  .agg(pl.col("value").sum().alias("value"))
-  .sort(["year", "title", "metric"])
   .filter(
     pl.col('metric').is_in(['avg_complexity_ratio', 'unconstitutionality_index'])
   )
