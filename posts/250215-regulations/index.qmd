@@ -298,7 +298,7 @@ year_grouped_regs = (
 def percent_change(new, old):
     return 0 if old == 0 else ((new - old) / old) * 100
 
-years = sorted(grouped_regs["year"].unique().to_list())
+years = sorted(year_grouped_regs["year"].unique().to_list())
 analysis_results = []
 
 for i in range(1, len(years)):
