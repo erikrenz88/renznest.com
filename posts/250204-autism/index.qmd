@@ -38,7 +38,7 @@ or not (*my take*: he's not), I'd like to look at the facts regarding autism, it
 vaccination, and where Trump's numbers originate.
 
 ## The claim
-|  year  |   rate   | % change[^3] |
+|  Year  |   Rate   | % Change[^3] |
 |--------|----------|--------------|
 |  2005  |  0.0001% |       -      |
 |  2025  |  2.90%   |  ⬆️ 2899900%  |
@@ -133,13 +133,8 @@ Plot.plot({
       y: d => Intl.NumberFormat().format(d)
     }
   },
-  color: {
-    domain: ["prev"],
-    range: ["#1C949D"],
-    legend: true
-  },
   marks: [
-    Plot.line(ft, {x: 'year', y: 'prev', stroke: 'prev', tip: true}),
+    Plot.line(ft, {x: 'year', y: 'prev', stroke: '#1C949D', tip: true}),
     Plot.ruleY([0])
   ]
 })
@@ -171,13 +166,8 @@ Plot.plot({
       y: d => Intl.NumberFormat().format(d)
     }
   },
-  color: {
-    domain: ["prev"],
-    range: ["#1C949D"],
-    legend: true
-  },
   marks: [
-    Plot.line(ft1, {x: 'year', y: 'prev', stroke: 'prev', tip: true}),
+    Plot.line(ft1, {x: 'year', y: 'prev', stroke: '#1C949D', tip: true}),
     Plot.ruleY([0])
   ]
 })
@@ -227,7 +217,7 @@ Plot.plot({
         : text 
   },
   marks: [
-    Plot.barY(fs, {x: 'year', y: 'count', z: 'case_criterion', interval: 1, fill: 'case_criterion', tip: true}),
+    Plot.barY(fs, {x: 'year', y: 'count', z: 'case_criterion', interval: 1, fill: 'case_criterion', order: 'appearence', tip: true}),
     Plot.ruleY([0])
   ]
 })
