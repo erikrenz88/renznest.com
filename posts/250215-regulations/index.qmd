@@ -414,7 +414,7 @@ words = (
 chart2 = (
 	year_grouped_regs
 	.join(laws_by_year_df, on="year", how="inner")
-	.join(rules, on="year", how="left")
+	.join(rules, on="year", how="inner")
 	.with_columns(
      (pl.col("rule_count") / pl.col("num_laws_passed")).alias("unconstitutionality_index")
   )
@@ -608,7 +608,7 @@ Plot.plot({
     tickFormat: text => text.replace(/_/g, " ").replace(/^./, str => str.toUpperCase()) 
   },
   marks: [
-    Plot.barY(fc1, {fx: 'year', x: 'metric', y: 'value', fill: 'metric', z: 'metric', tip: true,
+    Plot.barY(fc1, {fx: 'year', x: 'metric', y: 'value', fill: 'metric', sort: 'year', z: 'metric', tip: true,
       title: d => {
         const names = {
           total_word_count: 'Word Count',
@@ -624,7 +624,7 @@ Plot.plot({
 
 Word counts are higher in this analysis compared to DOGE's, though DOGE showed greater word counts in 2024. Ultimately, word count is a very simple metric for bureaucracy without taking other things into account, and calls into question if there's a better methodology to check for bureaucracy.
 
-But word count alone falls short of a definition of bueruacracy, so the next charts look at various metrics (produced with help from ChatGPT Data Analyst (4o) and Claude Sonnet 3.5) that look at things like bureaucracy, efficiency, and word counts by agency by year, as well as year over year changes. The charts can be filtered by all agencies.
+Word count alone falls short of a definition of bueruacracy, so the next charts look at various metrics (produced with help from ChatGPT Data Analyst (4o) and Claude Sonnet 3.5) that look at things like bureaucracy, efficiency, and word counts by agency by year, as well as year over year changes. The charts can be filtered by all agencies.
 
 ```{ojs}
 //| label: chart 3
@@ -633,55 +633,9 @@ But word count alone falls short of a definition of bueruacracy, so the next cha
 //| message: false 
 // Grouped line chart (complexity and unconstitutionality index by agency)
 
-tw = transpose(word)
 tc2 = transpose(chart2)
 
-
-fw = tw.map(d => ({...d, year: new Date(d.year, 0, 1)}))
 fc2 = tc2.map(d => ({...d, year: new Date(d.year, 0, 1)}))
-
-// get unique Agencies
-uniqueAgencies = [...new Set(fw.map(d => d.title))];
-uniqueAgencies.unshift('All')
-
-// Checkbox input for agency selection
-viewof agency = Inputs.select(uniqueAgencies, {
-    label: "Select Agencies",
-    value: ["All"],  // Default to selecting all
-    multiple: true
-})
-
-filtered = tw.filter(d => 
-  agency.includes('All') || agency.includes(d.title)
-)          
-
-Plot.plot({
-  marginLeft: 80,
-  marginBottom: 40,
-  marginRight: 80,
-  marginTop: 40,
-  width: 960,
-  height: 500,
-  x: {label: 'Year', tickFormat: d3.utcFormat("%Y")},
-  y: {label: 'Word count'},
-  color: {
-    domain: ["total_word_count"],
-    range: ["#EAC435"],
-    legend: true,
-    tickFormat: text => text.replace(/_/g, " ").replace(/^./, str => str.toUpperCase()) 
-  },
-  marks: [
-    Plot.line(fw, {x: 'year', y: 'value', stroke: 'metric', sort: 'year', tip: true,
-      title: d => {
-        const names = {
-          total_word_count: 'Word count'
-        }
-        return `${names[d.metric] || d.metric}: ${d.value.toFixed(2)}`
-      }
-    }),
-    Plot.ruleY([0])
-  ]
-})
 
 Plot.plot({
   marginLeft: 80,
