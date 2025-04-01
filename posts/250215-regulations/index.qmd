@@ -473,12 +473,12 @@ Currently, there is ambiguity as to the DOGE administrator as shown in the vario
 
 > "Trump has said that businessman Elon Musk is "in charge" of DOGE, but the White House has denied that Musk is a DOGE administrator or DOGE employee,[9][2][10] and said Musk "has no actual or formal authority to make government decisions"."
 
-The contracted organization-the true status of the organization, not actually a department of the U.S. government-released the first version of their website recently (Feb. 12 2025) attempting to make their effiency findings transparent through monies saved and an assessment of bueraucractic overreach. Many reports of the flaws in their savings analyses have been publicized but a concerning set of analysis is their regulations page which comes into focus with the [latest changes to DOGE's vision](https://www.whitehouse.gov/presidential-actions/2025/02/ensuring-lawful-governance-and-implementing-the-presidents-department-of-government-efficiency-regulatory-initiative/).
+The contracted organization - the true status of the organization, not actually a department of the U.S. government - released the first version of their website recently (Feb. 12 2025) attempting to make their effiency findings transparent through monies saved and an assessment of bueraucractic overreach. Many reports of the flaws in their savings analyses have been publicized but a concerning set of analysis is their regulations page which comes into focus with the [latest changes to DOGE's vision](https://www.whitehouse.gov/presidential-actions/2025/02/ensuring-lawful-governance-and-implementing-the-presidents-department-of-government-efficiency-regulatory-initiative/).
 
 Seemingly, the purpose of the page is to look at the amount of regulation (rules from agencies not created by congress) compared to the laws passed by Congress. That is to say there is more government rule making than congressional (representing the people's interests). The main metrics used are word counts by agency and year, and the Unconstitutionality Index.
 
 ### Unconstitutionally Index
-This index was created by the [Competitive Enterprise Institude](https://cei.org/opeds_articles/the-2025-unconstitutionality-index-exposing-congresss-abdication-of-power/), a nonprofit advocating for "regulatory reform on a wide range of policy issues". While a valid index, it should be treated as such-a tool to measure change in a group of representative data. It can provide a simple metric to track but does not provide full context. 
+This index was created by the [Competitive Enterprise Institude](https://cei.org/opeds_articles/the-2025-unconstitutionality-index-exposing-congresss-abdication-of-power/), a nonprofit advocating for "regulatory reform on a wide range of policy issues". While a valid index, it should be treated as such - a tool to measure change in a group of representative data. It can provide a simple metric to track but does not provide full context. 
 
 It is included in this analysis to compare the various metrics being used to asses regulatory reach. The discussion will include why metrics can only represent and should not be removed from context.
 
@@ -487,9 +487,9 @@ Here, these metrics are reviewed and compared to other metrics created for the p
 ## Methods
 
 ### Regulations
-Regulations are agency-created rules. These are not strictly voted on by the public and are seen by some as bureacuracy or government overreach. A counter point is that elected officials (the President, Congress) nominate and hold hearings to confirm these appointed positions (heads of the agencies) who in turn hire individuals they feel fit the qualifications - not voted on our citizen drawn up rules, but certainly reflective of the elected officials and within the expertise of those that fit the role.
+Regulations are agency-created rules. These are not strictly voted on by the public and are seen by some as bureacuracy or government overreach. A counter point is that elected officials (the President, Congress) nominate and hold hearings to confirm these appointed positions (heads of the agencies) who, in turn, hire individuals they feel fit the qualifications - not voted on as our citizen drawn up rules are, but certainly reflective of the elected officials and within the expertise of those that fit the role.
 
-Regulations were pulled from the GovInfo.gov API. All regulations were pulled between 2012 and 2014, looking for titles of regulations, the issued date of the regulation, and a package ID used to identify regulations and their details. Once regulations were pulled, granules (details for each regulation record) were pulled to obtain the agency that produced the regulation and text for each regulation.
+Regulations were pulled from the GovInfo.gov API. All regulations were pulled between 2012 and 2024, looking for titles of regulations, the issued date of the regulation, and a package ID used to identify regulations and their details. Once regulations were pulled, granules (details for each regulation record) were pulled to obtain the agency that produced the regulation and text for each regulation.
 
 These were saved to .csv file stored on Google Drive due to size restrictions on GitHub. The .csv was loaded into python and the following metrics were calculated:
     
@@ -505,9 +505,9 @@ $$
 The next calculation was the unconstitutionality index but requires numbers of laws by year. The method for gathering these is defined next.
 
 ### Laws
-Laws are federal laws that are voted on within the House and Senate. These are seen to be less government overreach and more reflective of the populations desires. To provide a counter point here, the elected officials may speak to their parties by addressing their concerns and promising to uphold those in Congress, but could vote against those concerns or be lobbied in direction that suits the few instad of the many.
+Laws are federal laws that are voted on within the House and Senate. These are seen to be less government overreach and more reflective of the populations desires. To provide a counter point here, the elected officials may speak to their parties by addressing their concerns and promising to uphold those in Congress, but could vote against those concerns or be lobbied in direction that suits the few instead of the many.
 
-Laws were counted from Congress.gov using the search feature for "Laws" between 2012 - 2024. Under "Legislative Action", "Laws Enacted" was selected. The specific congresses were selected by their year span and the years were mapped to congressional sessions. While innaccurate, laws were split evenly by the years of the congressional sessions (divided by 2) for a quick analysis. Improvements would be to manually count for each year that laws were passed but there is currently no automated way of collecting this data.
+Laws were counted from Congress.gov using the search feature for "Laws" between 2012 - 2024. Under "Legislative Action", "Laws Enacted" was selected. The specific congresses were selected by their year span and the years were mapped to congressional sessions. While innaccurate, laws were split evenly by the years of the congressional sessions for a quick analysis. Improvements would be to manually count for each year that laws were passed but there is currently no automated way of collecting this data.
 
 ### Unconstitutionally Index
 $$
@@ -624,7 +624,7 @@ Plot.plot({
 
 Word counts are higher in this analysis compared to DOGE's, though DOGE showed greater word counts in 2024. Ultimately, word count is a very simple metric for bureaucracy without taking other things into account, and calls into question if there's a better methodology to check for bureaucracy.
 
-Word count alone falls short of a definition of bueruacracy, so the next charts look at various metrics (produced with help from ChatGPT Data Analyst (4o) and Claude Sonnet 3.5) that look at things like bureaucracy, efficiency, and word counts by agency by year, as well as year over year changes. The charts can be filtered by all agencies.
+Word count alone falls short of a definition of bueruacracy, so the next charts look at various metrics (produced with help from ChatGPT Data Analyst (4o) and Claude Sonnet 3.5) that look at things like bureaucracy, efficiency, and word counts by agency by year, as well as year over year changes.
 
 ```{ojs}
 //| label: chart 3
@@ -699,7 +699,7 @@ Any words that match these in the text are counted and then divided by explanato
 
 These words do not provide a regulation but add word count with the assumption that they explain and are "less efficient". Obviously, an imperfect metric, but provides more context to how complex regulations can become and how efficient each regulation is with its words as opposed to simple word counts. The one is added to the sum of all matching explanatory words/phrases to ensure there is no division by zero errors. The efficiency ratio is then averaged by year for an agency.
 
-The unconstitutionality index is shown with the complexity ratio for comparison. You can see that regulations are more complex and have more variance, but the "unconsitutionality" looks similar throughout the 12 year span.
+The unconstitutionality index is shown with the complexity ratio for comparison. You can see both metrics look relatively stable over the 12 year period. While some say this shows that there is constant unconstitutionality, it also shows there is constant complexity in government agencies. i feel this is not aurprising though some will use that as a reason to detegulate the government. 
 
 ```{ojs}
 //| label: chart 4
@@ -756,9 +756,9 @@ $$
 \text {Efficiency Score} = \frac{\Delta_{bureaucractic} + \Delta_{complexity}}{2 \times \Delta_{words}}
 $$
 
-In other words, is the change in bureacracy plus the change in the regulatory complexity more or less than the change in words, or, if there's more words, there needs to be more complexity inside the bureaucratic terms to amke it an "efficient" rule, thereby giving valid reason for the increase in words.
+In other words, is the change in bureacracy plus the change in the regulatory complexity more or less than the change in words, or, if there's more words, there needs to be more complexity inside the bureaucratic terms to make it an "efficient" rule, thereby giving valid reason for the increase in words.
 
-The chart shows that through there is fluctuation depending on the year and administration, but the efficiency score is consistent over the 12 year period.
+The chart shows that through there is fluctuation depending on the year and administration, but the efficiency score is consistent over the 12 year period. It also shows the interesting point that there are different ways to make regulstions more efficient. For example, peak efficiency in 2022 came from a decrease in word growth and bureaucratic terms, while the rise in 2024 stemmed from a decreased wrod growth but increase in complexity.
 
 ## Discussion 
 
@@ -772,9 +772,9 @@ If this is absent from the analysis (which it clearly is when DOGE is only touti
 A specific example from the above is the number of laws to number of rules comarpison. There are a number of factors that go into both of these counts. For brevity, take the example of laws: they are passed through Congress. If there are delays to sessions or more partisan bickering, fewer laws get passed. Raw numbers alone do not provide an accurate representation. Also, one law can take a lot of time to pass (e.g. the Affordable Care Act is one law. I don't have a word count, but its 906 pages, so we can assume quite a few words.) Sometimes the reason for more words is to be thorough, not bureaucratic. Can there be efficencies? Sure. But that's not where the DOGE regulations page is aiming.
 
 ### Importance of transparency
-I'll cede, DOGE did post sources... sparingly. I will add that these sources are noted at the bottom with no ties back to the text or charts that are using them; furthermore, if you download the data behind the charts, there is a tidy file that shows years and counts. If you look at the githbu repo for this blog post, you can view the python code that pulls the CFR/eCFR data and you can quickly see that it is not a simple table pulled, nice and tidy, by year and word count.
+I'll cede, DOGE did post sources... sparingly. I will add that these sources are noted at the bottom with no ties back to the text or charts that are using them; furthermore, if you download the data behind the charts, there is a tidy file that shows years and counts. If you look at the GitHub repo for this blog post, you can view the python code that pulls the CFR/eCFR data and you can quickly see that it is not a simple table pulled, nice and tidy, by year and word count.
 
-While they make the bare minimum attempt to be transparent, there is clearly a lack of transparency, just enough to tick a box but not enough for a reproducibility exercise. If you want to be transparent and open to dsicussion about a topic, you include your work and sources. If you want to placate and weave Rumpelstiltskin type thread of golden garbage, you leave everything out.
+While they make the bare minimum attempt to be transparent, there is clearly a lack of transparency, just enough to tick a box but not enough for a reproducibility exercise. If you want to be transparent and open to discussion about a topic, you include your work and sources. If you want to placate and weave Rumpelstiltskin type thread of golden garbage, you leave everything out.
 
 ### Lack of expertise
 On the topic of transparency, we don't know all of the lovely individuals working in DOGE. But given the timing of the website release and the [news that was present at the time](https://projects.propublica.org/elon-musk-doge-tracker/), the *software engineers* they hired with, from what I could tell, no real-world data experience, are not capable of producing any quality analysis.
@@ -782,7 +782,7 @@ On the topic of transparency, we don't know all of the lovely individuals workin
 If you are going to do the job, do the job right. Before you can be efficient, you have to understand what's going on in full. That's what an analyst does - collects the data, intergates it, tells the story, and makes recommendations. Speaking as an analyst, this is sloppy, unprofessional, and a bit offensive (and I'm a white Christian heterosexual male so no DEI comments, thanks).
 
 ## Conclusion
-Ultimately, there probably is work to reduce inefficiencies in regulation but I can confidently say the way that DOGE is conducting it is **not** the way to do it. This is a mess that is aimed to blindside people with large numbers, get them mad at government protocols, and stop questioning DOGE methods. I'm fairly certain the "special government employee" maybe-not-leading-but-authority-figure works off the "first principles" philosophy of approaching a problem which would require better understanding of the first step before gutting it. In short, shape up DOGE. You're being paid far too much and hurtig far too many to being doing such a bad job.
+Ultimately, there probably is work to reduce inefficiencies in regulation but I can confidently say the way that DOGE is conducting it is **not** the way to do it. This is a mess that is aimed to blindside people with large numbers, get them mad at government protocols, and stop questioning DOGE methods. I'm fairly certain the "special government employee" maybe-not-leading-but-authority-figure works off the "first principles" philosophy of approaching a problem which would require better understanding of the first step before gutting it. In short, shape up DOGE. You're being paid far too much and hurting far too many to being doing such a bad job.
 
 Photo by <a href="https://unsplash.com/@onthesearchforpineapples?utm_content=creditCopyText&utm_medium=referral&utm_source=unsplash">Colin Lloyd</a> on <a href="https://unsplash.com/photos/us-a-flag-on-top-of-black-and-brown-wooden-cabinet-rfeIP9knGJs?utm_content=creditCopyText&utm_medium=referral&utm_source=unsplash">Unsplash</a>
       
