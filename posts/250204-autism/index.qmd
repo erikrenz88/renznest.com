@@ -206,7 +206,7 @@ Plot.plot({
     legend: true
   },
   marks: [
-    Plot.barY(fs, {x: 'year', y: 'count', z: 'case_criterion', interval: 1, fill: 'case_criterion', order: 'appearence', tip: true}),
+    Plot.rectY(fs, {x: 'year', y: 'count', z: 'case_criterion', interval: 'year', fill: 'case_criterion', order: 'appearence', tip: true}),
     Plot.ruleY([0])
   ]
 })
