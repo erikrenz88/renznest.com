@@ -98,14 +98,7 @@ study_type <- autism |>
     summarize(count = n()) |>
     rename(
         year = year_published
-    ) |>
-		mutate(
-				case_when(
-						str_like(case_criterion, '%Dsm-iii%') ~ 'Dsm-iii',
-						str_like(case_criterion, '%Dsm-iv%')  ~ 'Dsm-iv',
-						.default = case_criterion
-				)
-		)
+    )
 
 ojs_define(ustrend = usa_trend)
 ojs_define(uktrend = uk_trend)
@@ -134,7 +127,7 @@ Plot.plot({
     }
   },
   marks: [
-    Plot.line(ft, {x: 'year', y: 'prev', stroke: '#1C949D', tip: true}),
+    Plot.line(ft, {x: 'year', y: 'prev', stroke: '#1C949D', sort: 'year', tip: true}),
     Plot.ruleY([0])
   ]
 })
@@ -167,7 +160,7 @@ Plot.plot({
     }
   },
   marks: [
-    Plot.line(ft1, {x: 'year', y: 'prev', stroke: '#1C949D', tip: true}),
+    Plot.line(ft1, {x: 'year', y: 'prev', stroke: '#1C949D', sort: 'year', tip: true}),
     Plot.ruleY([0])
   ]
 })
@@ -210,11 +203,7 @@ Plot.plot({
   },
   color: {
     scheme: 'dark2',
-    legend: true,
-    tickFormat: text =>
-      typeof text === "string"
-        ? text.replace(/_/g, " ").replace(/^./, str => str.toUpperCase())
-        : text 
+    legend: true
   },
   marks: [
     Plot.barY(fs, {x: 'year', y: 'count', z: 'case_criterion', interval: 1, fill: 'case_criterion', order: 'appearence', tip: true}),
