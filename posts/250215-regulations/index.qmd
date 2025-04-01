@@ -291,6 +291,15 @@ year_grouped_regs = (
         pl.mean("complexity_ratio").alias("avg_complexity_ratio")
     )
 )
+
+melted_regs = (
+	year_grouped_regs.melt(
+		id_vars = ['year'],
+		value_vars = ['total_word_count', "total_bureaucratic_terms", "avg_complexity_ratio"],
+		variable_name="metric", 
+		value_name="value"
+	)
+)
 ```
 
 ```{python}
