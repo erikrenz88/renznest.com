@@ -5,11 +5,11 @@ categories: [autism, vaccines, news]
 image: "thumbnail.jpg" 
 bluesky-comments:
     enabled: true
-	profile: did:plc:q2qeo4572or5zc6vdbgcxjjf
-  mute-patterns:
-    - "📌"
-    - "🔥"
-    - "/\\bspam\\b/i"  # regex pattern
+		profile: did:plc:q2qeo4572or5zc6vdbgcxjjf
+ 		mute-patterns:
+    		- "📌"
+    		- "🔥"
+    		- "/\\bspam\\b/i"  # regex pattern
 ---
 
 ::: {.callout-note title='TL;DR'}
