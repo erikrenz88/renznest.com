@@ -48,6 +48,9 @@ bluesky-comments:
   enabled: true
   app-password: true
   post-url: true
+
+website:
+  google-analytics: "G-D52822BK17"
   
 execute:
   echo: false
