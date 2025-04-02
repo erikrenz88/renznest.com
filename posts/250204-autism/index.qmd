@@ -172,7 +172,7 @@ This can be compared to the below chart (data can be found [here](https://digita
 
 UK data is used due to the public health system being able to better track public health data. Disparate and politically divided state public health departments, not to mention greedy corporate entities in the likes of Hospitals, Electronic Health Record Systems, and Insurers, refuse to share data to actually *improve* health, but this is a topic for another time.
 
-If rates are declining in England (which they are across all of the UK, as well as the US), and there was a true link for MMR vaccines to cause ASD, the charts, in theory, should be trending the same way. This is known as correlation. As an example, if its hot outside, ice cream sales increase. Both things rise. At the very least, we expect that if MMR vaccines increase ASD prevalence, then both of these should be going up, not one going up while one is going down. If that is the case, then the correlation would suppose that lack of MMR vaccines increases ASD...
+If rates are declining in England (which they are across all of the UK, as well as the US), and there was a causal link for MMR vaccines to cause ASD, the charts, in theory, should be trending the same way. This is known as correlation. As an example, if its hot outside, ice cream sales increase. Both things rise. At the very least, we expect that if MMR vaccines increase ASD prevalence, then both of these should be going up, not one going up while one is going down. If that is the case, then the correlation would suppose that lack of MMR vaccines decreases ASD...
 
 What's unknown is the cause, or causation. Do ice cream sales increase with temperature because people are hot? Is it because higher temperatures increase natrual cravings for sweet? In the case of MMR vaccines and ASD, does thimersol (a preservative to maintain integrity of vaccines) cause ASD? This was scientifically ruled out for a similar reason: ASD rates increased in studied children that did not take thiomersal-preserved vaccines. This is an example of causation, and so far, no one peddling the vaccines-lead-to-autism hoax are able to find a casual link between vaccines and ASD.
 
@@ -225,10 +225,10 @@ We would also do well to remember that vaccines prevent the spread of disease, a
 
 Oh, and let's also not forget that [Robert F. Kennedy Jr. announced his children are all vaccinated](https://www.youtube.com/shorts/ipGn3BbJJjo), and yet, in the wake of the measles outbreak in the US, [he is urging American's to consume vitamin A as an unfounded treatment](https://thehill.com/policy/healthcare/5178797-texas-measles-outbreak-kennedy-vaccines/) (he's an environmental lawyer by trade, not a medical doctor or even tangential to that).
 
-###### Photo by [CDC](https://unsplash.com/@cdc?utm_content=creditCopyText&utm_medium=referral&utm_source=unsplash) on [Unsplash](https://unsplash.com/photos/woman-in-black-crew-neck-t-shirt-wearing-white-face-mask-uN8TV9Pw2ik?utm_content=creditCopyText&utm_medium=referral&utm_source=unsplash)
+Photo by [CDC](https://unsplash.com/@cdc?utm_content=creditCopyText&utm_medium=referral&utm_source=unsplash) on [Unsplash](https://unsplash.com/photos/woman-in-black-crew-neck-t-shirt-wearing-white-face-mask-uN8TV9Pw2ik?utm_content=creditCopyText&utm_medium=referral&utm_source=unsplash)
 
 [^1]: (https://en.wikipedia.org/wiki/Robert_F._Kennedy_Jr.)
 
 [^2]: (https://www.cnn.com/2024/11/21/politics/video/rfk-jr-past-trump-criticism-kfile-ebof-digvid)
 
-[^3]: % change is calculated as $(Value_2 - Value_1)/Value_1$
+[^3]: % change is calculated as $(Value_new - Value_old)/Value_old$
