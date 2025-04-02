@@ -231,4 +231,4 @@ Photo by [CDC](https://unsplash.com/@cdc?utm_content=creditCopyText&utm_medium=r
 
 [^2]: (https://www.cnn.com/2024/11/21/politics/video/rfk-jr-past-trump-criticism-kfile-ebof-digvid)
 
-[^3]: % change is calculated as $(Value_new - Value_old)/Value_old$
+[^3]: % change is calculated as $(Value_{new} - Value_{old})/Value_{old}$
