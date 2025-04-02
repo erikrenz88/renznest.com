@@ -173,7 +173,7 @@ Plot.plot({
 
 This can be compared to the below chart (data can be found [here](https://digital.nhs.uk/data-and-information/publications/statistical/nhs-immunisation-statistics)).
 
-![MMR Immunization by 2nd birthday (percent of children)](mmr.png). Pulled from the [2024 Childhood Immunisation Statisitcs document from UK House of Commons](https://researchbriefings.files.parliament.uk/documents/CBP-8556/CBP-8556.pdf). {fig-alt="A chart depicting MMR vaccination rates for countries in the United Kingdom between 1997 and 2024. All rates show a steady decline from 2012 to present."}
+![MMR Immunization by 2nd birthday (percent of children)](mmr.png). Pulled from the [2024 Childhood Immunisation Statisitcs document from UK House of Commons](https://researchbriefings.files.parliament.uk/documents/CBP-8556/CBP-8556.pdf){fig-alt="A chart depicting MMR vaccination rates for countries in the United Kingdom between 1997 and 2024. All rates show a steady decline from 2012 to present."}.
 
 UK data is used due to the public health system being able to better track public health data. Disparate and politically divided state public health departments, not to mention greedy corporate entities in the likes of Hospitals, Electronic Health Record Systems, and Insurers, refuse to share data to actually *improve* health, but this is a topic for another time.
 
@@ -238,3 +238,4 @@ Photo by [CDC](https://unsplash.com/@cdc?utm_content=creditCopyText&utm_medium=r
 
 [^3]: % change is calculated as $(Value_{new} - Value_{old})/Value_{old}$
 
+{{< bluesky-comments 3lltctgrbq223 >}}
