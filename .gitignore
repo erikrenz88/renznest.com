@@ -67,3 +67,5 @@ pythonindex.qmd
 test.qmd
 *.rmarkdown
 !autism_prevalence_studies_20250329.csv
+
+posts/250402-mediprogram/*

@@ -4,7 +4,12 @@ date: "2025-02-15"
 categories: [regulations, government, policy]
 image: "image1.jpg" 
 bluesky-comments:
-    enabled: true
+  profile: did:plc:q2qeo4572or5zc6vdbgcxjjf
+  mute-patterns:
+    - "/\\bspam\\b/i"
+    - "📌"
+    - "🔥"
+  filter-empty-replies: true
 freeze: auto
 execute:
   engine: python
@@ -785,4 +790,5 @@ If you are going to do the job, do the job right. Before you can be efficient, y
 Ultimately, there probably is work to reduce inefficiencies in regulation but I can confidently say the way that DOGE is conducting it is **not** the way to do it. This is a mess that is aimed to blindside people with large numbers, get them mad at government protocols, and stop questioning DOGE methods. I'm fairly certain the "special government employee" maybe-not-leading-but-authority-figure works off the "first principles" philosophy of approaching a problem which would require better understanding of the first step before gutting it. In short, shape up DOGE. You're being paid far too much and hurting far too many to being doing such a bad job.
 
 Photo by <a href="https://unsplash.com/@onthesearchforpineapples?utm_content=creditCopyText&utm_medium=referral&utm_source=unsplash">Colin Lloyd</a> on <a href="https://unsplash.com/photos/us-a-flag-on-top-of-black-and-brown-wooden-cabinet-rfeIP9knGJs?utm_content=creditCopyText&utm_medium=referral&utm_source=unsplash">Unsplash</a>
-      
+
+{{< bluesky-comments 3llwuistezc2o >}}
