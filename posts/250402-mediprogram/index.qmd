@@ -31,7 +31,8 @@ pacman::p_load(
     reactable,
     reactablefmtr,
     scales,
-    htmltools
+    htmltools,
+	here
 )
 ```
 
