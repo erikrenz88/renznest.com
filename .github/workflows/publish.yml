@@ -5,8 +5,8 @@ on:
     branches:
       - main
   schedule:
-    - cron: "0 6 * * *"  # Runs daily at 6 AM UTC
-  workflow_dispatch:  # Allows manual execution
+    - cron: "0 6 * * *"
+  workflow_dispatch:
 
 jobs:
   build:
@@ -24,31 +24,45 @@ jobs:
       - name: 🔧 Set Up R
         uses: r-lib/actions/setup-r@v2
         with:
-          r-version: '4.3.0'  # Ensure correct R version
+          r-version: '4.3.0'
+
+      - name: 🧭 Install Google Chrome
+        run: |
+          wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
+          sudo apt-get update
+          sudo apt-get install -y ./google-chrome-stable_current_amd64.deb
+          google-chrome-stable --version
+
+      - name: 🔧 Set Environment for Chromote
+        run: echo "CHROMOTE_CHROME=/usr/bin/google-chrome-stable" >> $GITHUB_ENV
 
       - name: 🔧 Install Python Dependencies
         run: |
-          pip install -r requirements.txt  # Ensure you have a requirements.txt file
+          pip install -r requirements.txt
           pip install polars gdown requests pandas matplotlib seaborn jupyter-cache
 
       - name: 🔧 Install R Dependencies
         run: |
-          Rscript -e 'install.packages(c("rmarkdown", "knitr", "pacman", "httr", "jsonlite", "readr", "dplyr", "lubridate", "tidyr"))
-          '
-        
+          Rscript -e 'install.packages(c("rmarkdown", "knitr", "pacman", "httr", "jsonlite", "readr", "dplyr", "lubridate", "tidyr", "xml2", "rvest", "chromote", "reactable", "htmltools", "scales", "reactablefmtr"), repos = "https://cloud.r-project.org")'
+
+      - name: 🔧 Install System Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libcurl4-openssl-dev libssl-dev libxml2-dev
+
       - name: 🔧 Install Quarto 1.6+
         run: |
           wget -qO- https://quarto.org/download/latest/quarto-linux-amd64.deb > quarto.deb
           sudo dpkg -i quarto.deb
           quarto check
-     
+
       - name: 🏗 Build Quarto Website
         uses: quarto-dev/quarto-actions/render@v2
 
       - name: 📤 Publish to GitHub Pages
         uses: actions/upload-pages-artifact@v3
         with:
-          path: "_site/"  # Upload final website for publishing
+          path: "_site/"
 
   deploy:
     needs: build

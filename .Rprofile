@@ -1,2 +1,5 @@
 # .Rprofile
-Sys.setenv(CHROMOTE_CHROME = "/usr/bin/chromium-browser")
+options(
+  chromote.chrome.path = "/usr/bin/google-chrome",
+  chromote.chrome.args = c("--headless", "--disable-gpu")
+)
