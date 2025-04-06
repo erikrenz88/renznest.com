@@ -1,0 +1,572 @@
+---
+title: "Medi-Programs"
+date: "2025-04-02"
+categories: [medicare, medicaid, healthcare, news]
+image: "image1.jpg" 
+bluesky-comments:
+  profile: did:plc:q2qeo4572or5zc6vdbgcxjjf
+  mute-patterns:
+    - "📌"
+    - "🔥"
+    - "/\\bspam\\b/i"  # regex pattern
+  filter-empty-replies: true
+---
+
+```{r setup, include = FALSE}
+library(pacman)
+pacman::p_load(
+    rvest,
+    httr2,
+    jsonlite,
+    tidyr,
+    dplyr,
+    magrittr,
+    stringr,
+    janitor,
+    readr,
+    readxl,
+    RSelenium,
+    curl,
+    chromote,
+    reactable,
+    reactablefmtr,
+    scales,
+    htmltools
+)
+```
+
+```{r}
+url <- 'https://www.presidency.ucsb.edu/statistics/elections/2024'
+
+# Download voting results table from url
+df <- url %>%
+  read_html() %>%
+  html_node('table') %>%
+  html_table()
+
+# Set duplicate dataframe to get headers from table
+df_names <- df
+
+# Set headers as names from the correct table row
+names(df_names) <- df[12, ]
+
+# Pull together cleaned data frame
+votes <- df_names[14:nrow(df_names), 1:11] |>
+    clean_names() |>
+    filter(!str_like(state, 'CD%')) |>
+    filter(!state %in% c('', 'Totals')) |>
+    filter(!str_like(state, 'Last%')) |>
+    rename(
+      votes_democrat = votes,
+      percent_democrat = percent,
+      dv_democrat = ev,
+      votes_republican = votes_2,
+      percent_republican = percent_2,
+      ev_republican = ev_2,
+      votes_other = votes_3,
+      percent_other = percent_3,
+      ev_other = ev_3,
+      totalvotes = total_votes
+    ) |>
+    pivot_longer(
+      cols = -state,
+      names_to = c('metric', 'party'),
+      names_pattern = '(.*)_(.*)$',
+      values_to = 'value'
+    ) |>
+    mutate(metric = if_else(is.na(metric), 'totalvotes', metric)) |>
+    mutate(
+      value = str_remove(value, "%"),
+      value = str_remove_all(value, ','),
+      value = if_else(value == '', '0', value),
+      value = str_trim(value),
+      value = as.numeric(value),
+      value = if_else(metric == "percent", value/100, value)
+    )
+```
+
+```{r, results="hide"}
+Sys.getenv("CHROMOTE_CHROME")
+
+# Start a headless browser session
+b <- ChromoteSession$new()
+
+# Navigate to the Medicaid & CHIP enrollment highlights page
+b$Page$navigate("https://www.medicaid.gov/medicaid/program-information/medicaid-and-chip-enrollment-data/report-highlights")
+b$Page$loadEventFired()
+
+# Wait for JavaScript-rendered content to load
+Sys.sleep(5) 
+
+# Extract the rendered page source
+html <- b$Runtime$evaluate("document.documentElement.outerHTML")$result$value
+
+# Parse the HTML and extract the table
+page <- read_html(html)
+tables <- page %>% html_elements("table")
+
+# Extract the first table (adjust index if needed)
+medicaid <- tables[[1]] %>% html_table() |>
+  clean_names() |>
+  select(!c('state_expanded_medicaid', 'state_notes')) |>
+  pivot_longer(
+    cols = !state,
+    names_to = 'metric',
+    values_to = 'value'
+  ) |>
+  mutate(
+    party = 'medicaid',
+    value = str_remove_all(value, ','),
+    value = if_else(value == '', '0', value),
+    value = str_trim(value),
+    value = as.numeric(value)
+  )
+```
+
+```{r}
+medicare <- read_xlsx(
+    here::here('posts/250402-mediprogram/CPS MDCR ENROLL AB 1-8 2021.xlsx'),
+    sheet = 'MDCR ENROLL AB 8',
+    range = "A4:H59",
+    col_names = TRUE,  
+    na = "" 
+) |>
+clean_names() |>
+filter(!area_of_residence %in% c('BLANK', 'All Areas', 'United States')) |>
+rename(state = area_of_residence) |>
+pivot_longer(
+    cols = matches("^(total|aged|disabled)"),
+    names_to = "metric",
+    values_to = "value"
+  ) |>
+  mutate(
+    party = "medicare",
+    value = as.numeric(value)
+  ) |>
+  select(state, metric, party, value)
+```
+
+```{r}
+data <- bind_rows(votes, medicare, medicaid) |>
+  distinct() |>
+  arrange(state)
+
+enroll_vote <- data |>
+  filter(metric %in% c('votes', 'total_medicare_enrollees', 'medicaid_enrollment'))
+
+aged <- data |>
+  filter(metric %in% c('votes', 'total_aged', 'party'))
+
+disabled <- data |>
+  filter(metric %in% c('votes', 'total_disabled', 'party'))
+
+table <- data |>
+  pivot_wider(
+    id_cols = state,
+    names_from = c(metric, party),
+    values_from = value,
+    values_fill = 0
+  ) |>
+  arrange(state)
+```
+
+```{r}
+#| cache: false
+ojs_define(enroll = enroll_vote)
+ojs_define(aged = aged)
+ojs_define(disabled = disabled)
+```
+
+::: {.callout-note title='TL;DR'}
+* WIP
+:::
+
+## Background
+Medicare and Medicaid are government programs designed to provide healthcare coverage for individuals 65 and over, or having certain diseases, or low-income individuals with certain conditions, like pregnancy.
+
+Medicare primarily serves individuals aged 65 and older, as well as younger individuals with specific disabilities or conditions such as End-Stage Renal Disease (ESRD). It is a federal program funded through payroll taxes, premiums, and general revenue.
+
+Medicaid, on the other hand, is a joint federal and state program that provides healthcare coverage to low-income individuals and families. Eligibility and benefits vary by state, and it often covers services not included in Medicare, such as long-term care and personal care services.
+
+## Context
+A recent budget was submitted by the Senate to address the deficit.
+
+### [H. Con. Res. 14](https://www.budget.senate.gov/imo/media/doc/senate_amendment_h_con_res_14.pdf)
+> SEC. 3003. SPENDING REDUCTION RESERVE FUND TO SAVE
+MORE THAN $2,000,000,000,000.
+The Chairman of the Committee on the Budget of
+the Senate may revise the allocations of a committee or
+committees, aggregates, and other appropriate levels in
+this resolution for one or more bills, joint resolutions,
+amendments, amendments between the Houses, motions,
+or conference reports relating to spending reforms that
+will—
+(1) scrutinize line item expenditures, especially
+non-defense spending that did not exist prior to or
+has grown significantly since the start of the COVID–19 pandemic;
+(2) fulfill the President’s promise to protect the
+old-age, survivors, and disability insurance benefits
+program under title II of the Social Security Act (42
+U.S.C. 401 et seq.), the Medicare program under
+title XVIII of the Social Security Act (42 U.S.C.
+1395 et seq.), or the Medicaid program under title
+XIX of the Social Security Act (42 U.S.C. 1396 et
+seq.), including from waste, fraud, and abuse
+
+This (in my limited understanding of legalese) provides ambiguous authority to make changes through a variety of means to Medicare and Medicaid programs to "fulfill the President's promise to protest the old-age, survivors, and disability insurance benefits". While there may be a promise, there is no certainty of how the changes will be made to decrease the deifict. The only thing that is safely assumed is that there will be decreases somehow to reduce the deficit. On an [already strained program](https://www.kff.org/medicare/issue-brief/medicare-advantage-in-2024-enrollment-update-and-key-trends/) (32.8 million people enrolled in Medicare Advantage (MA) plans; $462 billion (54%) of total Medicare spending).
+
+This begs the question who is going to be affected by budget and subsequent policy changes. In particular, because these policies are created by the Trump administration, how many of his constiutents could be negatively impacted by these changes, specifically to Medicare and Medicaid?
+
+One way to view this is by visualizing the amount of medicare and medicaid users by state against the voting outcome by state. Though a rough estiamte, this allows a view of where the majority of Medicare and Medicaid enrollees reside and what the majority of their votes resulted in during the 2024 election. The purpose is not to shame voters, but to show that policies like these are negatively impacting the voters that placed this administration into power, and are thereby unheard by their representatives.
+
+The map below can be explored to show the amounts of Medicare and Medicaid enrollees, the Aged (65 and older) Medicare enrollees, and the disabled Medicare enrollees nationally, compared to a highlighted state.
+
+```{ojs}
+//| label: enrollment
+//| echo: false 
+//| warning: false 
+//| message: false 
+Plot = import('https://cdn.jsdelivr.net/npm/@observablehq/plot@0.6.16/+esm')
+d3 = require("d3@7")
+
+// transpose data
+tenroll = transpose(enroll)
+taged = transpose(aged)
+tdisabled = transpose(disabled)
+
+// load US States TopoJSON
+us = await d3.json("https://cdn.jsdelivr.net/npm/us-atlas@3/states-10m.json")
+
+// convert to GeoJSON
+statesGeo = topojson.feature(us, us.objects.states).features
+
+// map FIPS codes to names
+stateNames = new Map(Object.entries(us.objects.states.geometries).map(([_, g]) => [g.id, g.properties.name]))
+
+// build a map
+stateDataMap = new Map(states.map(d => [d.state, d]))
+
+// calculate the total medicare and medicaid for nation - 2024 for medicaid, 2021 for medicare
+totalMedicaid = d3.sum(states, d => d.medicaid)
+totalMedicare = d3.sum(states, d => d.medicare)
+totalAged = d3.sum(taged.filter(d => d.metric === "total_aged"), d => d.value)
+totalDisabled = d3.sum(tdisabled.filter(d => d.metric === "total_disabled"), d => d.value)
+
+// roll up data
+states = d3.rollups(
+  tenroll,
+  group => {
+    let votes = Object.fromEntries(group.filter(d => d.metric === "votes").map(d => [d.party, d.value]))
+    let agedData = taged.find(d => d.state === group[0].state && d.metric === "total_aged")
+    let disabledData = tdisabled.find(d => d.state === group[0].state && d.metric === "total_disabled")
+    return {
+      state: group[0].state,
+      democratVotes: votes.democrat ?? 0,
+      republicanVotes: votes.republican ?? 0,
+      otherVotes: votes.other ?? 0,
+      medicaid: group.find(d => d.metric === "medicaid_enrollment")?.value ?? 0,
+      medicare: group.find(d => d.metric === "total_medicare_enrollees")?.value ?? 0,
+      aged: agedData?.value ?? 0,
+      disabled: disabledData?.value ?? 0
+    }
+  },
+  d => d.state
+).map(([state, values]) => ({state, ...values}))
+
+// input to update bar chart
+hoveredState = Generators.input(
+  Inputs.select(states.map(d => d.state).sort(), {
+    label: "Select a state to compare",
+    value: null
+  })
+)
+
+selected = stateDataMap.get(hoveredState.value)
+
+// Create separate charts for each metric
+function createEnrollmentChart(selected) {
+  return Plot.plot({
+    width: 300,
+    height: 200,
+    y: {label: "Enrollment"},
+    x: {label: "Program"},
+    title: "Program Enrollment",
+    marks: selected
+      ? [
+          Plot.barY([
+            {program: "Medicaid", group: "Nation", value: totalMedicaid},
+            {program: "Medicare", group: "Nation", value: totalMedicare},
+            {program: "Medicaid", group: selected.state, value: selected.medicaid},
+            {program: "Medicare", group: selected.state, value: selected.medicare}
+          ], {
+            x: d => `${d.program} (${d.group})`,
+            y: "value",
+            fill: "program"
+          })
+        ]
+      : [
+          Plot.barY([
+            {program: "Medicaid", value: totalMedicaid},
+            {program: "Medicare", value: totalMedicare}
+          ], {
+            x: "program",
+            y: "value",
+            fill: "program"
+          })
+        ]
+  })
+}
+
+function createAgedChart(selected) {
+  return Plot.plot({
+    width: 300,
+    height: 200,
+    y: {label: "Enrollment"},
+    x: {label: ""},
+    title: "Aged Enrollment",
+    marks: selected
+      ? [
+          Plot.barY([
+            {group: "Nation", value: totalAged},
+            {group: selected.state, value: selected.aged}
+          ], {
+            x: "group",
+            y: "value",
+            fill: "steelblue"
+          })
+        ]
+      : [
+          Plot.barY([{value: totalAged}], {
+            y: "value",
+            fill: "steelblue"
+          })
+        ]
+  })
+}
+
+function createDisabledChart(selected) {
+  return Plot.plot({
+    width: 300,
+    height: 200,
+    y: {label: "Enrollment"},
+    x: {label: ""},
+    title: "Disabled Enrollment",
+    marks: selected
+      ? [
+          Plot.barY([
+            {group: "Nation", value: totalDisabled},
+            {group: selected.state, value: selected.disabled}
+          ], {
+            x: "group",
+            y: "value",
+            fill: "orange"
+          })
+        ]
+      : [
+          Plot.barY([{value: totalDisabled}], {
+            y: "value",
+            fill: "orange"
+          })
+        ]
+  })
+}
+
+html`<div style="display: flex; flex-direction: column; gap: 2rem;">
+  <div style="width: 100%;">
+    ${Plot.plot({
+      projection: "albers-usa",
+      width: 800,
+      height: 500,
+      marks: [
+        Plot.geo(statesGeo, {
+          fill: d => {
+            const name = stateNames.get(d.id)
+            const datum = stateDataMap.get(name)
+            if (!datum) return "#ccc"
+            return datum.democratVotes > datum.republicanVotes ? "navy" : "darkred"
+          },
+          stroke: "#fff",
+          title: d => {
+            const name = stateNames.get(d.id)
+            const datum = stateDataMap.get(name)
+            return datum
+              ? `${name}
+Dem: ${datum.democratVotes.toLocaleString()}
+Rep: ${datum.republicanVotes.toLocaleString()}`
+              : name
+          },
+          onPointerEnter: function(event, d) {
+            const name = stateNames.get(d.id)
+            if (stateDataMap.has(name)) {
+              hoveredState.value = name
+            }
+          }
+        })
+      ]
+    })}
+  </div>
+  <div style="display: flex; justify-content: space-between; gap: 1rem;">
+    ${createEnrollmentChart(stateDataMap.get(hoveredState.value))}
+    ${createAgedChart(stateDataMap.get(hoveredState.value))}
+    ${createDisabledChart(stateDataMap.get(hoveredState.value))}
+  </div>
+</div>`
+```
+
+And for those mor enuemrically inclined, a table version of this can be viewed below:
+```{r}
+# Create state info with flags and abbreviations
+state_info <- data.frame(
+  state = state.name,
+  abbrev = state.abb,
+  flag_url = paste0(
+    "https://raw.githubusercontent.com/CivilServiceUSA/us-states/master/images/flags/", 
+    tolower(gsub(" ", "-", state.name)), 
+    "-flag-small.png"
+  )
+)
+
+# Helper function for bar charts
+bar_chart <- function(value, light_color, dark_color, pct) {
+  if (is.na(value) || is.na(pct)) {
+    return("N/A")
+  }
+  
+  htmltools::div(
+    style = sprintf("width: 100%%; height: 25px; background-color: %s", light_color),
+    htmltools::div(
+      style = sprintf(
+        "width: %.1f%%; height: 100%%; background-color: %s; 
+         display: flex; align-items: center; justify-content: center;
+         color: white; font-size: 12px",
+        pct, dark_color
+      ),
+      sprintf("%.1f%%", pct)
+    )
+  )
+}
+
+# Create the full table with calculations
+table_with_stats <- table |>
+  mutate(
+    # Calculate national totals
+    national_medicaid = sum(medicaid_enrollment_medicaid, na.rm = TRUE),
+    national_medicare = sum(total_medicare_enrollees_medicare, na.rm = TRUE),
+    national_aged = sum(total_aged_medicare, na.rm = TRUE),
+    national_disabled = sum(total_disabled_medicare, na.rm = TRUE),
+    
+    # Calculate percentages
+    medicaid_pct = medicaid_enrollment_medicaid / national_medicaid * 100,
+    medicare_pct = total_medicare_enrollees_medicare / national_medicare * 100,
+    aged_pct = total_aged_medicare / national_aged * 100,
+    disabled_pct = total_disabled_medicare / national_disabled * 100,
+    vote_diff = votes_republican - votes_democrat
+  ) |>
+  select(state, medicaid_pct, medicare_pct, aged_pct, disabled_pct, vote_diff) |>
+  left_join(state_info, by = 'state')
+
+# create chart for vote difference
+vote_diff_chart <- function(value) {
+  if (is.na(value)) {
+    return("N/A")
+  }
+  
+  # Calculate percentage relative to total votes in that state
+  total_votes <- abs(value)
+  pct <- abs(value) / total_votes * 100
+  
+  # Determine colors based on which party won
+  color <- if(value > 0) "#de2d26" else "#3182bd"
+  light_color <- if(value > 0) "#fcae91" else "#9ecae1"
+  
+  htmltools::div(
+    style = sprintf("width: 100%%; height: 25px; background-color: %s", light_color),
+    htmltools::div(
+      style = sprintf(
+        "width: %.1f%%; height: 100%%; background-color: %s; 
+         display: flex; align-items: center; justify-content: center;
+         color: white; font-size: 12px",
+        pct, color
+      ),
+      sprintf("%s%d", if(value > 0) "R+" else "D+", abs(value))
+    )
+  )
+}
+
+# Create the reactable
+reactable(
+  table_with_stats,
+  theme = reactableTheme(
+    style = list(
+      fontFamily = "Helvetica",
+      backgroundColor = "#fff"
+    ),
+    headerStyle = list(
+      backgroundColor = "#f7f7f7",
+      color = "#333",
+      fontWeight = 600
+    )
+  ),
+  columns = list(
+    state = colDef(
+      name = "State",
+      cell = function(value) {
+        image_url <- table_with_stats$flag_url[table_with_stats$state == value]
+        htmltools::div(
+          style = "display: flex; align-items: center; gap: 8px",
+          htmltools::img(src = image_url, height = "20px"),
+          value
+        )
+      }
+    ),
+    medicaid_pct = colDef(
+      name = "Medicaid %",
+      cell = function(value) {
+        bar_chart(value, "#9ecae1", "#3182bd", value)
+      },
+      width = 150
+    ),
+    medicare_pct = colDef(
+      name = "Medicare %",
+      cell = function(value) {
+        bar_chart(value, "#a1d99b", "#31a354", value)
+      },
+      width = 150
+    ),
+    aged_pct = colDef(
+      name = "Aged %",
+      cell = function(value) {
+        bar_chart(value, "#bdbdbd", "#636363", value)
+      },
+      width = 150
+    ),
+    disabled_pct = colDef(
+      name = "Disabled %",
+      cell = function(value) {
+        bar_chart(value, "#fdae6b", "#e6550d", value)
+      },
+      width = 150
+    ),
+    vote_diff = colDef(
+      name = "Vote Margin",
+      cell = function(value) {
+        vote_diff_chart(value)
+      },
+      width = 200
+    ),
+    abbrev = colDef(show = FALSE),
+    flag_url = colDef(show = FALSE)
+  ),
+  defaultSorted = "state",
+  defaultPageSize = 10,
+  striped = TRUE,
+  highlight = TRUE,
+  compact = TRUE,
+  showSortIcon = TRUE,
+  showPageSizeOptions = TRUE,
+  pageSizeOptions = c(10, 20, 50)
+)
+```
+
+
+Photo by <a href="https://unsplash.com/@chela_bonky?utm_content=creditCopyText&utm_medium=referral&utm_source=unsplash">Chela B.</a> on <a href="https://unsplash.com/photos/brown-wooden-signage-near-green-trees-during-daytime-BbHNvqnzDIk?utm_content=creditCopyText&utm_medium=referral&utm_source=unsplash">Unsplash</a>
