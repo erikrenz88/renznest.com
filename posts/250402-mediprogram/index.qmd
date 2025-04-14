@@ -375,6 +375,7 @@ The map below can be explored to show the amounts of Medicare and Medicaid enrol
 //| message: false 
 
 // Import required libraries
+Plot = import('https://cdn.jsdelivr.net/npm/@observablehq/plot@0.6.16/+esm')
 d3 = require("d3@7")
 topojson = require("topojson-client@3")
 import {addTooltips} from "@mkfreeman/plot-tooltip"
