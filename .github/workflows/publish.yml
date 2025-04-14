@@ -46,7 +46,7 @@ jobs:
 
       - name: 🔧 Install R Dependencies
         run: |
-          Rscript -e 'install.packages(c("rmarkdown", "knitr", "pacman", "httr", "jsonlite", "readr", "dplyr", "lubridate", "tidyr", "xml2", "rvest", "chromote", "reactable", "htmltools", "scales", "reactablefmtr"), repos = "https://cloud.r-project.org")'
+          Rscript -e 'install.packages(c("rmarkdown", "knitr", "pacman", "httr", "jsonlite", "readr", "dplyr", "lubridate", "tidyr", "xml2", "rvest", "chromote", "reactable", "htmltools", "scales", "reactablefmtr", "here"), repos = "https://cloud.r-project.org")'
 
       - name: 🔐 Set Census API Key in R Session
         run: |
