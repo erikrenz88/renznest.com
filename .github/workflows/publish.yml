@@ -46,7 +46,7 @@ jobs:
 
       - name: 🔧 Install R Dependencies
         run: |
-          Rscript -e 'install.packages(c("rmarkdown", "knitr", "pacman", "httr", "jsonlite", "readr", "dplyr", "lubridate", "tidyr", "xml2", "rvest", "chromote", "reactable", "htmltools", "scales", "reactablefmtr", "here"), repos = "https://cloud.r-project.org")'
+          Rscript -e 'install.packages(c("rmarkdown", "knitr", "pacman", "httr", "jsonlite", "readr", "dplyr", "lubridate", "tidyr", "xml2", "rvest", "chromote", "reactable", "htmltools", "scales", "reactablefmtr"), repos = "https://cloud.r-project.org")'
 
       - name: 🔐 Set Census API Key in R Session
         run: |
@@ -74,38 +74,8 @@ jobs:
           sudo dpkg -i quarto.deb
           quarto check
 
-          - name: 🧠 Detect Changed Blog Posts
-          id: changed-posts
-          run: |
-            git fetch origin main
-        
-            # Find changed blog folders under /posts/
-            changed_dirs=$(git diff --name-only origin/main -- posts/ | grep -oE '^posts/[0-9]{6}[^/]+' | sort -u || true)
-        
-            echo "Changed blog post directories:"
-            echo "$changed_dirs"
-        
-            if [[ -z "$changed_dirs" ]]; then
-              echo "No blog posts changed."
-              echo "RENDER=false" >> $GITHUB_ENV
-            else
-              echo "Rendering the following blog posts:" >> $GITHUB_STEP_SUMMARY
-              echo "$changed_dirs" | tee changed_posts.txt >> $GITHUB_STEP_SUMMARY
-              echo "RENDER=true" >> $GITHUB_ENV
-            fi
-        
-      - name: 🏗 Conditionally Render Site
-        if: env.RENDER == 'true'
-        run: |
-          # Render each changed blog post
-          while read -r post; do
-            echo "Rendering $post"
-            quarto render "$post"
-          done < changed_posts.txt
-      
-          # Always render top-level pages like index.qmd
-          quarto render index.qmd
-          quarto render about.qmd || true  # Optional: other shared pages
+      - name: 🏗 Build Quarto Website
+        uses: quarto-dev/quarto-actions/render@v2
 
       - name: 📤 Publish to GitHub Pages
         uses: actions/upload-pages-artifact@v3
