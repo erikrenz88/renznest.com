@@ -1,6 +1,12 @@
 ---
-title: "Medi-Programs"
+title: "Medi-Programs" 
 date: "2025-04-02"
+format:
+  html:
+    include-in-header:
+      text: |
+        <script src="https://cdn.jsdelivr.net/npm/@observablehq/runtime@5/dist/runtime.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/@observablehq/stdlib@5/dist/stdlib.js"></script>
 categories: [medicare, medicaid, healthcare, news]
 image: "image1.jpg" 
 bluesky-comments:
@@ -11,7 +17,7 @@ bluesky-comments:
     - "/\\bspam\\b/i"  # regex pattern
   filter-empty-replies: true
 ---
-
+`
 ```{r setup, include = FALSE}
 library(pacman)
 pacman::p_load(
@@ -31,7 +37,11 @@ pacman::p_load(
     reactable,
     reactablefmtr,
     scales,
-    htmltools
+    htmltools,
+    sf,
+    tigris,
+    units,
+    tidycensus
 )
 ```
 
@@ -124,6 +134,46 @@ medicaid <- tables[[1]] %>% html_table() |>
 ```
 
 ```{r}
+# Set your Census API key
+if (is.null(Sys.getenv("CENSUS_API_KEY")) || Sys.getenv("CENSUS_API_KEY") == "") {
+  census_api_key(Sys.getenv("CENSUS_API_KEY"), install = TRUE, overwrite = TRUE)
+}
+
+# Load variables for the 2023 ACS 1-year estimates
+vars <- load_variables(2023, "acs1", cache = TRUE)
+
+# Identify variables related to income-to-poverty ratios
+# For example, B17024_002 represents individuals with income-to-poverty ratio under 0.50
+# You'll need to select variables that, when combined, represent under 138% FPL
+
+# Fetch data for all states
+pov <- get_acs(
+  geography = "state",
+  variables = c(
+    pop_total    = "B17024_001",
+    under_50     = "B17024_002",
+    between_50_74 = "B17024_003",
+    between_75_99 = "B17024_004",
+    between_100_124 = "B17024_005",
+    between_125_149 = "B17024_006"  # We’ll take ~38% of this
+  ),
+  year = 2023,
+  survey = "acs1",
+  geometry = FALSE
+) |>
+  select(NAME, variable, estimate) %>%
+  pivot_wider(names_from = variable, values_from = estimate) %>%
+  rename(state = NAME)
+
+poverty <- pov %>%
+  mutate(
+    medicaid_eligible_perc = sum(under_50, between_50_74, between_75_99, between_100_124, between_125_149)/pop_total,  # or a sum of multiple variables if you're combining ranges
+    eligible_per_100 = (sum(under_50, between_50_74, between_75_99, between_100_124, between_125_149)/ pop_total) * 100
+  ) |>
+  select(state, medicaid_eligible_perc)
+```
+
+```{r}
 medicare <- read_xlsx(
     here::here('posts/250402-mediprogram/CPS MDCR ENROLL AB 1-8 2021.xlsx'),
     sheet = 'MDCR ENROLL AB 8',
@@ -147,9 +197,62 @@ pivot_longer(
 ```
 
 ```{r}
-data <- bind_rows(votes, medicare, medicaid) |>
-  distinct() |>
-  arrange(state)
+# Load state population estimates for 2024 from Census
+population_data <- read_xlsx(here::here('_dev/250402-mediprogram/SCPRC-EST2024-18+POP.xlsx'), skip = 3) %>%
+  select(`...1`, 'Number') %>%
+  rename(state = `...1`) %>%
+  filter(!is.na(Number)) %>%
+  filter(!state %in% c("Northeast", "Midwest", "South", "West", "United States")) %>%
+  mutate(
+    state = str_remove(str_trim(state), '.'),
+    metric = 'population',
+    value = as.numeric(gsub(",", "", Number))
+  ) %>%
+  select(!Number)
+```
+
+```{r}
+data <- bind_rows(votes, medicare, medicaid, population_data) |>
+  distinct()
+
+population_lookup <- data %>%
+  filter(metric == "population") %>%
+  select(state, value)
+
+non_population_data <- data %>%
+  filter(metric != "population") %>%
+  inner_join(population_lookup, by = "state")
+
+per1000_rows <- non_population_data %>%
+  mutate(
+    metric = paste0(metric, "Per1000"),
+    value = (value.x / value.y) * 1000
+  ) %>%
+  select(state, metric, value, party)
+
+eligible_population_rows <- population_lookup %>%
+  inner_join(poverty) |>
+  mutate(
+    metric = "eligible_population",
+    value = value * medicaid_eligible_perc,
+    party = NA
+  ) %>%
+  select(state, metric, value, party)
+
+medicaid_per1000_eligible <- medicaid %>%
+  inner_join(population_lookup, by = "state") %>%
+  inner_join(poverty, by = "state") |>
+  mutate(
+    eligible_population = value.y * medicaid_eligible_perc,
+    metric = "medicaidPer1000Eligible",
+    value = (value.x / eligible_population) * 1000,
+    party = party
+  ) %>%
+  select(state, metric, value, party)
+
+data <- bind_rows(data, per1000_rows,  medicaid_per1000_eligible) |>
+  arrange(state) |>
+  mutate(value = as.numeric(value))
 
 enroll_vote <- data |>
   filter(metric %in% c('votes', 'total_medicare_enrollees', 'medicaid_enrollment'))
@@ -165,20 +268,50 @@ table <- data |>
     id_cols = state,
     names_from = c(metric, party),
     values_from = value,
-    values_fill = 0
+    values_fill = list(value = 0),
+    values_fn = list(value = sum)
   ) |>
-  arrange(state)
+  arrange(state) |>
+  mutate(across(where(is.list), ~ as.numeric(unlist(.x)))) |>
+  mutate(
+    party = case_when(
+      (votes_democrat - votes_republican) > 0 ~ 'Democrat',
+      .default = 'Republican'
+    )
+  )
 ```
 
 ```{r}
 #| cache: false
-ojs_define(enroll = enroll_vote)
+ojs_define(enroll = data)
 ojs_define(aged = aged)
 ojs_define(disabled = disabled)
 ```
 
+```{r}
+# Compute national averages
+national_avg <- table %>%
+  summarise(across(where(is.numeric), ~ mean(.x, na.rm = TRUE))) %>%
+  mutate(party = "National") %>%
+  select(party, everything())
+
+# Compute party-level averages
+party_avg <- table %>%
+  group_by(party) %>%
+  summarise(across(where(is.numeric), ~ mean(.x, na.rm = TRUE)), .groups = "drop")
+
+# Combine national and party-level averages
+averages <- bind_rows(party_avg, national_avg) 
+
+avg <- averages |>
+  select(party, total_medicare_enrolleesPer1000_medicare, total_agedPer1000_medicare, total_disabledPer1000_medicare, medicaidPer1000Eligible_medicaid)
+```
+
 ::: {.callout-note title='TL;DR'}
-* WIP
+* **This is a lengthy and complex analysis - this section is highly summarized and should be read in full context.**
+* Recently passed budget (H. Con. Res. 14) looks to examine Medicare and Medicaid for "waste, fraud, and abuse".
+* Looking at voter results by state alongside populations of Medicare and Medicaid enrollees, 65+ year olds and disabled persons shows Republican states *could* be more negatively impacted by this budget.
+* Though Republican proposed, the party's actions point away from caring for constituents and toward paranoia about external threat, and lining the already deep pockets of large corporations. The money would be better spent improving the programs that could drastically benefit its own party members.
 :::
 
 ## Background
@@ -189,7 +322,7 @@ Medicare primarily serves individuals aged 65 and older, as well as younger indi
 Medicaid, on the other hand, is a joint federal and state program that provides healthcare coverage to low-income individuals and families. Eligibility and benefits vary by state, and it often covers services not included in Medicare, such as long-term care and personal care services.
 
 ## Context
-A recent budget was submitted by the Senate to address the deficit.
+A recent budget was passed by the Senate to address the deficit.
 
 ### [H. Con. Res. 14](https://www.budget.senate.gov/imo/media/doc/senate_amendment_h_con_res_14.pdf)
 > SEC. 3003. SPENDING REDUCTION RESERVE FUND TO SAVE
@@ -213,12 +346,25 @@ title XVIII of the Social Security Act (42 U.S.C.
 XIX of the Social Security Act (42 U.S.C. 1396 et
 seq.), including from waste, fraud, and abuse
 
-This (in my limited understanding of legalese) provides ambiguous authority to make changes through a variety of means to Medicare and Medicaid programs to "fulfill the President's promise to protest the old-age, survivors, and disability insurance benefits". While there may be a promise, there is no certainty of how the changes will be made to decrease the deifict. The only thing that is safely assumed is that there will be decreases somehow to reduce the deficit. On an [already strained program](https://www.kff.org/medicare/issue-brief/medicare-advantage-in-2024-enrollment-update-and-key-trends/) (32.8 million people enrolled in Medicare Advantage (MA) plans; $462 billion (54%) of total Medicare spending).
+The resolution introduces ambiguous authority to alter Medicare and Medicaid in the name of "protecting" benefits. There are no specifics on how those changes will reduce the deficit. Cuts are coming-but how and to whom remain uncertain. On an [already strained program](https://www.kff.org/medicare/issue-brief/medicare-advantage-in-2024-enrollment-update-and-key-trends/) (32.8 million people enrolled in Medicare Advantage (MA) plans; $462 billion (54%) of total Medicare spending).
 
-This begs the question who is going to be affected by budget and subsequent policy changes. In particular, because these policies are created by the Trump administration, how many of his constiutents could be negatively impacted by these changes, specifically to Medicare and Medicaid?
+The next questions become, who is going to be affected by budget and subsequent policy changes? In particular, because these policies are created by the Trump administration, how many of his constituents could be negatively impacted by these changes, specifically to Medicare and Medicaid?
 
-One way to view this is by visualizing the amount of medicare and medicaid users by state against the voting outcome by state. Though a rough estiamte, this allows a view of where the majority of Medicare and Medicaid enrollees reside and what the majority of their votes resulted in during the 2024 election. The purpose is not to shame voters, but to show that policies like these are negatively impacting the voters that placed this administration into power, and are thereby unheard by their representatives.
+## Methods
+One way to view this is by visualizing the amount of Medicare and Medicaid users by state against the voting outcome by state. Though a rough estimate, this allows a view of where the majority of Medicare and Medicaid enrollees reside and what the majority of their votes resulted in during the 2024 election. The purpose is not to shame voters, but to examine whether policies like these are negatively impacting the voters that placed this administration into power, and are thereby unheard by their representatives.
 
+Data in this analysis came from the following sources:
+* Vote counts (2024) - [University of Santa Barbara](https://www.presidency.ucsb.edu/statistics/elections/2024)
+* Total Medicare enrollees, Aged persons (> 65 years old), and disabled persons by state (2021) - [CMS](https://data.cms.gov/summary-statistics-on-beneficiary-enrollment/medicare-and-medicaid-reports/cms-program-statistics-medicare-total-enrollment)
+* Total Medicaid enrollees - [Medicaid.gov](https://www.medicaid.gov/medicaid/program-information/medicaid-and-chip-enrollment-data/report-highlights)
+* Population estimates (2024, to adjust for population by state) - [Census.gov](https://www.census.gov/data/tables/time-series/demo/popest/2020s-national-detail.html)
+* Potential Medicaid enrollees (used percentage of federal poverty line as a representation of eligibility) - [Census.gov through 'tidycensus' R package/software](https://walker-data.com/tidycensus/reference/get_acs.html)
+
+Voting data was collated by the University of Santa Barbara - thank you for your efforts in bringing this important data together.
+
+State-level comaprisons required normalization: adjusting numbers to allow for meaningful comparison across different population sizes. The enrollment and population numbers were divided by the state population and multiplied by 1,000 to account for population differences and give meaningful comparison. This becomes more nuanced when looking at Medicaid, as eligibility criteria differs across states. Since this is difficult data to find, collect, and calculate, I've used the census poverty data, looking at the numbers of individuals who are 149% of the [federal poverty line](https://aspe.hhs.gov/topics/poverty-economic-mobility/poverty-guidelines) or lower. This means they make 49% above the federal poverty line or less. Typically, Medicaid eligibility ranges from 120% - 140%, with 138% being the threshold for most states with expanded Medicaid eligibility. 
+
+## Data
 The map below can be explored to show the amounts of Medicare and Medicaid enrollees, the Aged (65 and older) Medicare enrollees, and the disabled Medicare enrollees nationally, compared to a highlighted state.
 
 ```{ojs}
@@ -226,8 +372,11 @@ The map below can be explored to show the amounts of Medicare and Medicaid enrol
 //| echo: false 
 //| warning: false 
 //| message: false 
-Plot = import('https://cdn.jsdelivr.net/npm/@observablehq/plot@0.6.16/+esm')
+
+// Import required libraries
 d3 = require("d3@7")
+topojson = require("topojson-client@3")
+import {addTooltips} from "@mkfreeman/plot-tooltip"
 
 // transpose data
 tenroll = transpose(enroll)
@@ -243,330 +392,195 @@ statesGeo = topojson.feature(us, us.objects.states).features
 // map FIPS codes to names
 stateNames = new Map(Object.entries(us.objects.states.geometries).map(([_, g]) => [g.id, g.properties.name]))
 
-// build a map
-stateDataMap = new Map(states.map(d => [d.state, d]))
+function sumMetric(metric) {
+  return d3.sum(tenroll, d => d.metric === metric ? d.value : 0);
+}
 
-// calculate the total medicare and medicaid for nation - 2024 for medicaid, 2021 for medicare
-totalMedicaid = d3.sum(states, d => d.medicaid)
-totalMedicare = d3.sum(states, d => d.medicare)
-totalAged = d3.sum(taged.filter(d => d.metric === "total_aged"), d => d.value)
-totalDisabled = d3.sum(tdisabled.filter(d => d.metric === "total_disabled"), d => d.value)
+// Aggregate data by state and compute necessary metrics
+states = [
+  {
+    state: "National",
+    democratVotes: sumMetric("votes", "democrat"),
+    republicanVotes: sumMetric("votes", "republican"),
+    otherVotes: sumMetric("votes", "other"),
+    medicaid: sumMetric("medicaid_enrollment"),
+    medicare: sumMetric("total_medicare_enrollees"),
+    aged: sumMetric("total_aged"),
+    disabled: sumMetric("total_disabled"),
+    population: sumMetric("population"),
+    medicaidPer1000: (sumMetric("medicaid_enrollment") / sumMetric("population")) * 1000,
+    medicarePer1000: (sumMetric("total_medicare_enrollees") / sumMetric("population")) * 1000,
+    agedPer1000: (sumMetric("total_aged") / sumMetric("population")) * 1000,
+    disabledPer1000: (sumMetric("total_disabled") / sumMetric("population")) * 1000
+  }
+  ,
+  ...d3.groups(tenroll, d => d.state).map(([state, records]) => {
+    const metrics = Object.fromEntries(records.map(d => [d.metric, d.value]));
+    const votes = d3.rollup(records.filter(d => d.metric === "votes"), v => d3.sum(v, d => d.value), d => d.party);
+    const totalVotes = votes.get("democrat") + votes.get("republican") + votes.get("other");
+    const percentDifference = totalVotes > 0
+      ? ((votes.get("republican") - votes.get("democrat")) / totalVotes) * 100
+      : 0;
 
-// roll up data
-states = d3.rollups(
-  tenroll,
-  group => {
-    let votes = Object.fromEntries(group.filter(d => d.metric === "votes").map(d => [d.party, d.value]))
-    let agedData = taged.find(d => d.state === group[0].state && d.metric === "total_aged")
-    let disabledData = tdisabled.find(d => d.state === group[0].state && d.metric === "total_disabled")
     return {
-      state: group[0].state,
-      democratVotes: votes.democrat ?? 0,
-      republicanVotes: votes.republican ?? 0,
-      otherVotes: votes.other ?? 0,
-      medicaid: group.find(d => d.metric === "medicaid_enrollment")?.value ?? 0,
-      medicare: group.find(d => d.metric === "total_medicare_enrollees")?.value ?? 0,
-      aged: agedData?.value ?? 0,
-      disabled: disabledData?.value ?? 0
-    }
-  },
-  d => d.state
-).map(([state, values]) => ({state, ...values}))
-
-// input to update bar chart
-hoveredState = Generators.input(
-  Inputs.select(states.map(d => d.state).sort(), {
-    label: "Select a state to compare",
-    value: null
+      state,
+      democratVotes: votes.get("democrat") || 0,
+      republicanVotes: votes.get("republican") || 0,
+      otherVotes: votes.get("other") || 0,
+      percentDifference,
+      medicaid: metrics["medicaid_enrollment"] || 0,
+      medicare: metrics["total_medicare_enrollees"] || 0,
+      aged: metrics["total_aged"] || 0,
+      disabled: metrics["total_disabled"] || 0,
+      population: metrics["population"] || null,
+      medicaidPer1000: metrics["medicaidPer1000Eligible"] || 0,
+      medicarePer1000: metrics["total_medicare_enrolleesPer1000"] || 0,
+      agedPer1000: metrics["total_agedPer1000"] || 0,
+      disabledPer1000: metrics["total_disabledPer1000"] || 0
+    };
   })
-)
+];
 
-selected = stateDataMap.get(hoveredState.value)
+// Create a map of state data for quick lookup
+stateDataMap = new Map(states.map(d => [d.state, d]));
 
-// Create separate charts for each metric
-function createEnrollmentChart(selected) {
-  return Plot.plot({
-    width: 300,
-    height: 200,
-    y: {label: "Enrollment"},
-    x: {label: "Program"},
-    title: "Program Enrollment",
-    marks: selected
-      ? [
-          Plot.barY([
-            {program: "Medicaid", group: "Nation", value: totalMedicaid},
-            {program: "Medicare", group: "Nation", value: totalMedicare},
-            {program: "Medicaid", group: selected.state, value: selected.medicaid},
-            {program: "Medicare", group: selected.state, value: selected.medicare}
-          ], {
-            x: d => `${d.program} (${d.group})`,
-            y: "value",
-            fill: "program"
-          })
-        ]
-      : [
-          Plot.barY([
-            {program: "Medicaid", value: totalMedicaid},
-            {program: "Medicare", value: totalMedicare}
-          ], {
-            x: "program",
-            y: "value",
-            fill: "program"
-          })
-        ]
+// Generate the choropleth map
+addTooltips(
+  Plot.plot({
+    projection: "albers-usa",
+    width: 800,
+    height: 500,
+    marks: [
+      Plot.geo(statesGeo, {
+        fill: d => {
+          const name = stateNames.get(d.id);
+          const datum = stateDataMap.get(name);
+          if (!datum || name === "National") return "#ccc"; // Exclude "National"
+          return datum.percentDifference > 0 ? "#E65E5E" : "#91A8C7"; // Red for Republican, Blue for Democrat
+        },
+        stroke: "#fff",
+        title: d => {
+          const name = stateNames.get(d.id);
+          const datum = stateDataMap.get(name);
+          if (!datum || name === "National") return `${name}\nNo data available`;
+
+          const percentDiff = `${datum.percentDifference > 0 ? "R+" : "D+"} ${Math.abs(datum.percentDifference).toFixed(2)}%`;
+
+          return `${name}
+${percentDiff}
+Democrat Votes: ${datum.democratVotes.toLocaleString()}
+Republican Votes: ${datum.republicanVotes.toLocaleString()}`;
+        }
+      })
+    ]
   })
-}
-
-function createAgedChart(selected) {
-  return Plot.plot({
-    width: 300,
-    height: 200,
-    y: {label: "Enrollment"},
-    x: {label: ""},
-    title: "Aged Enrollment",
-    marks: selected
-      ? [
-          Plot.barY([
-            {group: "Nation", value: totalAged},
-            {group: selected.state, value: selected.aged}
-          ], {
-            x: "group",
-            y: "value",
-            fill: "steelblue"
-          })
-        ]
-      : [
-          Plot.barY([{value: totalAged}], {
-            y: "value",
-            fill: "steelblue"
-          })
-        ]
-  })
-}
-
-function createDisabledChart(selected) {
-  return Plot.plot({
-    width: 300,
-    height: 200,
-    y: {label: "Enrollment"},
-    x: {label: ""},
-    title: "Disabled Enrollment",
-    marks: selected
-      ? [
-          Plot.barY([
-            {group: "Nation", value: totalDisabled},
-            {group: selected.state, value: selected.disabled}
-          ], {
-            x: "group",
-            y: "value",
-            fill: "orange"
-          })
-        ]
-      : [
-          Plot.barY([{value: totalDisabled}], {
-            y: "value",
-            fill: "orange"
-          })
-        ]
-  })
-}
-
-html`<div style="display: flex; flex-direction: column; gap: 2rem;">
-  <div style="width: 100%;">
-    ${Plot.plot({
-      projection: "albers-usa",
-      width: 800,
-      height: 500,
-      marks: [
-        Plot.geo(statesGeo, {
-          fill: d => {
-            const name = stateNames.get(d.id)
-            const datum = stateDataMap.get(name)
-            if (!datum) return "#ccc"
-            return datum.democratVotes > datum.republicanVotes ? "navy" : "darkred"
-          },
-          stroke: "#fff",
-          title: d => {
-            const name = stateNames.get(d.id)
-            const datum = stateDataMap.get(name)
-            return datum
-              ? `${name}
-Dem: ${datum.democratVotes.toLocaleString()}
-Rep: ${datum.republicanVotes.toLocaleString()}`
-              : name
-          },
-          onPointerEnter: function(event, d) {
-            const name = stateNames.get(d.id)
-            if (stateDataMap.has(name)) {
-              hoveredState.value = name
-            }
-          }
-        })
-      ]
-    })}
-  </div>
-  <div style="display: flex; justify-content: space-between; gap: 1rem;">
-    ${createEnrollmentChart(stateDataMap.get(hoveredState.value))}
-    ${createAgedChart(stateDataMap.get(hoveredState.value))}
-    ${createDisabledChart(stateDataMap.get(hoveredState.value))}
-  </div>
-</div>`
+);
 ```
 
-And for those mor enuemrically inclined, a table version of this can be viewed below:
-```{r}
-# Create state info with flags and abbreviations
-state_info <- data.frame(
-  state = state.name,
-  abbrev = state.abb,
-  flag_url = paste0(
-    "https://raw.githubusercontent.com/CivilServiceUSA/us-states/master/images/flags/", 
-    tolower(gsub(" ", "-", state.name)), 
-    "-flag-small.png"
-  )
+The next charts show the top states for aged (> 65 years or older), disabled, Medicare enrollees and Medicaid enrollees. Medicare and Medicaid enrolles are normalized (adjusted to compare states relative to each other) to state populations, and eligible populations, respectively. States can be added to compare against others as desired.
+
+```{ojs}
+//| label: bars
+//| echo: false 
+//| warning: false 
+//| message: false 
+// Import the Inputs library
+Inputs = require("@observablehq/inputs");
+
+viewof selectedMetric = Inputs.select(
+  ["Medicaid", "Medicare", "Aged", "Disabled"],
+  { label: "View top 5 states by:", value: "Medicaid" }
 )
 
-# Helper function for bar charts
-bar_chart <- function(value, light_color, dark_color, pct) {
-  if (is.na(value) || is.na(pct)) {
-    return("N/A")
+topStates = states
+  .filter(d => d.state !== "National")
+  .sort((a, b) => b[selectedMetric.toLowerCase() + "Per1000"] - a[selectedMetric.toLowerCase() + "Per1000"])
+  .slice(0, 5)
+  .map(d => d.state)
+
+viewof selectedState = Inputs.select(
+  states.filter(d => d.state !== "National").map(d => d.state).sort(),
+  {
+    label: "Select States",
+    placeholder: "Choose states",
+    multiple: true,
+    value: topStates
   }
-  
-  htmltools::div(
-    style = sprintf("width: 100%%; height: 25px; background-color: %s", light_color),
-    htmltools::div(
-      style = sprintf(
-        "width: %.1f%%; height: 100%%; background-color: %s; 
-         display: flex; align-items: center; justify-content: center;
-         color: white; font-size: 12px",
-        pct, dark_color
-      ),
-      sprintf("%.1f%%", pct)
-    )
-  )
-}
-
-# Create the full table with calculations
-table_with_stats <- table |>
-  mutate(
-    # Calculate national totals
-    national_medicaid = sum(medicaid_enrollment_medicaid, na.rm = TRUE),
-    national_medicare = sum(total_medicare_enrollees_medicare, na.rm = TRUE),
-    national_aged = sum(total_aged_medicare, na.rm = TRUE),
-    national_disabled = sum(total_disabled_medicare, na.rm = TRUE),
-    
-    # Calculate percentages
-    medicaid_pct = medicaid_enrollment_medicaid / national_medicaid * 100,
-    medicare_pct = total_medicare_enrollees_medicare / national_medicare * 100,
-    aged_pct = total_aged_medicare / national_aged * 100,
-    disabled_pct = total_disabled_medicare / national_disabled * 100,
-    vote_diff = votes_republican - votes_democrat
-  ) |>
-  select(state, medicaid_pct, medicare_pct, aged_pct, disabled_pct, vote_diff) |>
-  left_join(state_info, by = 'state')
-
-# create chart for vote difference
-vote_diff_chart <- function(value) {
-  if (is.na(value)) {
-    return("N/A")
-  }
-  
-  # Calculate percentage relative to total votes in that state
-  total_votes <- abs(value)
-  pct <- abs(value) / total_votes * 100
-  
-  # Determine colors based on which party won
-  color <- if(value > 0) "#de2d26" else "#3182bd"
-  light_color <- if(value > 0) "#fcae91" else "#9ecae1"
-  
-  htmltools::div(
-    style = sprintf("width: 100%%; height: 25px; background-color: %s", light_color),
-    htmltools::div(
-      style = sprintf(
-        "width: %.1f%%; height: 100%%; background-color: %s; 
-         display: flex; align-items: center; justify-content: center;
-         color: white; font-size: 12px",
-        pct, color
-      ),
-      sprintf("%s%d", if(value > 0) "R+" else "D+", abs(value))
-    )
-  )
-}
-
-# Create the reactable
-reactable(
-  table_with_stats,
-  theme = reactableTheme(
-    style = list(
-      fontFamily = "Helvetica",
-      backgroundColor = "#fff"
-    ),
-    headerStyle = list(
-      backgroundColor = "#f7f7f7",
-      color = "#333",
-      fontWeight = 600
-    )
-  ),
-  columns = list(
-    state = colDef(
-      name = "State",
-      cell = function(value) {
-        image_url <- table_with_stats$flag_url[table_with_stats$state == value]
-        htmltools::div(
-          style = "display: flex; align-items: center; gap: 8px",
-          htmltools::img(src = image_url, height = "20px"),
-          value
-        )
-      }
-    ),
-    medicaid_pct = colDef(
-      name = "Medicaid %",
-      cell = function(value) {
-        bar_chart(value, "#9ecae1", "#3182bd", value)
-      },
-      width = 150
-    ),
-    medicare_pct = colDef(
-      name = "Medicare %",
-      cell = function(value) {
-        bar_chart(value, "#a1d99b", "#31a354", value)
-      },
-      width = 150
-    ),
-    aged_pct = colDef(
-      name = "Aged %",
-      cell = function(value) {
-        bar_chart(value, "#bdbdbd", "#636363", value)
-      },
-      width = 150
-    ),
-    disabled_pct = colDef(
-      name = "Disabled %",
-      cell = function(value) {
-        bar_chart(value, "#fdae6b", "#e6550d", value)
-      },
-      width = 150
-    ),
-    vote_diff = colDef(
-      name = "Vote Margin",
-      cell = function(value) {
-        vote_diff_chart(value)
-      },
-      width = 200
-    ),
-    abbrev = colDef(show = FALSE),
-    flag_url = colDef(show = FALSE)
-  ),
-  defaultSorted = "state",
-  defaultPageSize = 10,
-  striped = TRUE,
-  highlight = TRUE,
-  compact = TRUE,
-  showSortIcon = TRUE,
-  showPageSizeOptions = TRUE,
-  pageSizeOptions = c(10, 20, 50)
 )
+
+// Prepare data for bar charts
+filteredData = [
+  ...states.filter(d => d.state === "National"),
+  ...states.filter(d => selectedState.includes(d.state))
+].flatMap(d => [
+  { state: d.state, metric: "Medicare", value: d.medicarePer1000, rawValue: d.medicare, color: "#75B09C" },
+  { state: d.state, metric: "Medicaid", value: d.medicaidPer1000, rawValue: d.medicaid, color: "#97C594" },
+  { state: d.state, metric: "Aged", value: d.agedPer1000, rawValue: d.aged, color: "#998650" },
+  { state: d.state, metric: "Disabled", value: d.disabledPer1000, rawValue: d.disabled, color: "#E0BE36" }
+]).filter(d => d.value != null);
+
+// Generate the bar chart
+addTooltips(
+  Plot.plot({
+    marks: [
+      Plot.barX(filteredData, {
+        y: "metric",
+        fy: "state",
+        x: "value",
+        fill: "metric",
+        title: d =>
+          `${d.state} - ${d.metric}:
+          ${d.value.toFixed(1)} per 1,000
+          (${d.rawValue.toLocaleString()} total)`
+      })
+    ],
+    x: {
+      label: null
+    },
+    fy: {
+      label: null,
+      domain: ["National", ...selectedState.sort()]
+    },
+    y: {
+      label: null
+    },
+    color: {
+      domain: ["Medicare", "Medicaid", "Aged", "Disabled"],
+      range: ["#75B09C", "#97C594", "#998650", "#E0BE36"],
+      legend: true
+    },
+    facet: {
+      marginRight: 50,
+      scale: "independent"
+    },
+    width: 800,
+    height: 120 * (selectedState.length + 1),
+    marginLeft: 100,
+    marginRight: 60
+  })
+);
 ```
 
+## Discussion
+These visuals paint a very interesting picture. Looking at Medicare enrollees per 1,000 individuals, there are three Democratic states and two Republican, two of which also appear in the top five states by Aged population per 1,000 people. This is unsurprising since Medicare is largely an apolitical program - it is more dependent on the population of a state rather than its voting result.
+
+Numbers of Aged and Disabled do show a different picture: three of the top five states for Aged population per 1,000 people, and all five of the top fives states for Disabled population per 1,000 people, were Republican states. While political affilitation cannot be assumed by age or disability, these groups are more concentrated in red states. Federal Medicare policy is shaped by the party in power, so these same states may face greater risk from cuts. In short: voters in Republican-led states could be the most affected by reforms they helped enable. This analysis does not predict specific outcomes, but highlits a possibility worth cosidering: red states may have knowingly or unknowingly, negatively impacted their opportunities for these federal programs as they are being reviewed for  efficacy. 
+
+I will take a moment to say that, again, looking for "waste, fraud, and abuse" as the figure-heads routinely spout, is important. But following on from my [DOGE analysis](https://www.renznest.com/posts/250215-regulations/), the methods that have been illustrated so far are not those of people looking to make positive changes while maintaining services, but instead people who are looking to grind things down to the bare bones and then keep it as a [minimum viable product](https://en.wikipedia.org/wiki/Minimum_viable_product).
+
+Circling back, Medicaid is even more intriguing. Three of the top five states were Democratic states. The complexity stems from Medicaid being joint-funded by the nation and the state. It is unsurpising that more Medicaid enrollees per 1,000 eligible persons are found in Democratic states as these states are more likely to have Medicaid programs and expand them, while Republican states would decrease the funding. So while these potential budget cuts may not seem to impact Republican states negatively, this is linked to having less enrollees due to smaller programs. I would argue that Republican states are more disenfranchised by these cuts as they are less likely to have federal funding if the cuts occur, leading that state to pick up the tab. If the state is already red, it is less likely to fill the funding gap - especially without federal support - leaving more individuals without health insurance.
+
+In my opinion, these programs, while federally funded, should not be seen as "big government" intervention, but more wealth equity. If the wealth is appropriately redistributed (and by that, I mean each individual paying an appropriate amount into their communities - local, state, and federal - relative to what they earn) then we act more like **united** states: we are as strong as our weakest link, and if we don't raise them up with us, we are all left behind.
+
+ [Voroni](https://www.voronoiapp.com/economy/The-Median-Income-in-Every-State-Adjusted-for-Cost-of-Living-1585) shows the median incomes by state, adjusted for cost of living. The reason this is important is that:
+1) States with lower median incomes tend to have Republican turn out; and
+2) Medicaid eligibility is largely based on individual/family income levels.
+
+Without creating another analysis, its important to note that lower incomes are factors of many things, including availability of high income jobs, population, industries, and cost of living. So while one of those is adjusted for, this is not a perfect comparison. But again, it serves to show that red states are typically lower income. When you're living on less, every dollar counts. Budget reveiws shouldn't strip these programs to the bone-they should ensure the support is actually felt by the people who need it most.
+
+## Final thoughts
+A budget update can be seemingly insignificant, but I believe this one in particular is controversial. The language is open-ended and makes a very clear shift that the current administration is more fearful of outside impact to borders, than it is of the internal failings affecting its own citizens. By naming the only methods of government aided healthcare as potential pots of "waste, fraud, and abuse" that could be redirected to the [grossly enormous $1 trillion defense budget](https://www.politico.com/news/2025/04/07/hegseth-trump-1-trillion-defense-budget-00007147), America chooses to continue to deprioritize its own citizens, provide money to large corporations (namely health insurance companies) while bankrupting its own citizens, and giving record-breaking military spending power to a man who's already mishandled classified war plans over unsecured messages.
+
+Maybe it's time we redefine what "national security" really means.
 
 Photo by <a href="https://unsplash.com/@chela_bonky?utm_content=creditCopyText&utm_medium=referral&utm_source=unsplash">Chela B.</a> on <a href="https://unsplash.com/photos/brown-wooden-signage-near-green-trees-during-daytime-BbHNvqnzDIk?utm_content=creditCopyText&utm_medium=referral&utm_source=unsplash">Unsplash</a>
