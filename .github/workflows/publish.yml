@@ -74,25 +74,25 @@ jobs:
           sudo dpkg -i quarto.deb
           quarto check
 
-          - name: 🧠 Detect Changed Blog Posts
-          id: changed-posts
-          run: |
-            git fetch origin main
-        
-            # Find changed blog folders under /posts/
-            changed_dirs=$(git diff --name-only origin/main -- posts/ | grep -oE '^posts/[0-9]{6}[^/]+' | sort -u || true)
-        
-            echo "Changed blog post directories:"
-            echo "$changed_dirs"
-        
-            if [[ -z "$changed_dirs" ]]; then
-              echo "No blog posts changed."
-              echo "RENDER=false" >> $GITHUB_ENV
-            else
-              echo "Rendering the following blog posts:" >> $GITHUB_STEP_SUMMARY
-              echo "$changed_dirs" | tee changed_posts.txt >> $GITHUB_STEP_SUMMARY
-              echo "RENDER=true" >> $GITHUB_ENV
-            fi
+      - name: 🧠 Detect Changed Blog Posts
+        id: changed-posts
+        run: |
+          git fetch origin main
+      
+          # Find changed blog folders under /posts/
+          changed_dirs=$(git diff --name-only origin/main -- posts/ | grep -oE '^posts/[0-9]{6}[^/]+' | sort -u || true)
+      
+          echo "Changed blog post directories:"
+          echo "$changed_dirs"
+      
+          if [[ -z "$changed_dirs" ]]; then
+            echo "No blog posts changed."
+            echo "RENDER=false" >> $GITHUB_ENV
+          else
+            echo "Rendering the following blog posts:" >> $GITHUB_STEP_SUMMARY
+            echo "$changed_dirs" | tee changed_posts.txt >> $GITHUB_STEP_SUMMARY
+            echo "RENDER=true" >> $GITHUB_ENV
+          fi
         
       - name: 🏗 Conditionally Render Site
         if: env.RENDER == 'true'
