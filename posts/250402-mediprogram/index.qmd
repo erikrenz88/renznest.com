@@ -156,7 +156,7 @@ pov <- get_acs(
     between_50_74 = "B17024_003",
     between_75_99 = "B17024_004",
     between_100_124 = "B17024_005",
-    between_125_149 = "B17024_006"  # We’ll take ~38% of this
+    between_125_149 = "B17024_006"
   ),
   year = 2023,
   survey = "acs1",
@@ -168,7 +168,7 @@ pov <- get_acs(
 
 poverty <- pov %>%
   mutate(
-    medicaid_eligible_perc = sum(under_50, between_50_74, between_75_99, between_100_124, between_125_149)/pop_total,  # or a sum of multiple variables if you're combining ranges
+    medicaid_eligible_perc = sum(under_50, between_50_74, between_75_99, between_100_124, between_125_149)/pop_total, 
     eligible_per_100 = (sum(under_50, between_50_74, between_75_99, between_100_124, between_125_149)/ pop_total) * 100
   ) |>
   select(state, medicaid_eligible_perc)
@@ -199,7 +199,7 @@ pivot_longer(
 
 ```{r}
 # Load state population estimates for 2024 from Census
-population_data <- read_xlsx(here::here('_dev/250402-mediprogram/SCPRC-EST2024-18+POP.xlsx'), skip = 3) %>%
+population_data <- read_xlsx(here::here('posts/250402-mediprogram/SCPRC-EST2024-18+POP.xlsx'), skip = 3) %>%
   select(`...1`, 'Number') %>%
   rename(state = `...1`) %>%
   filter(!is.na(Number)) %>%
