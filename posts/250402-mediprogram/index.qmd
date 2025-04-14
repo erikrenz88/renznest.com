@@ -38,6 +38,7 @@ pacman::p_load(
     reactablefmtr,
     scales,
     htmltools,
+    here,
     sf,
     tigris,
     units,
