@@ -587,5 +587,5 @@ Maybe it's time we redefine what "national security" really means.
 
 Photo by <a href="https://unsplash.com/@chela_bonky?utm_content=creditCopyText&utm_medium=referral&utm_source=unsplash">Chela B.</a> on <a href="https://unsplash.com/photos/brown-wooden-signage-near-green-trees-during-daytime-BbHNvqnzDIk?utm_content=creditCopyText&utm_medium=referral&utm_source=unsplash">Unsplash</a>
 
-{{< bluesky-commnts  3lmshz22xns24 >}}
+{{< bluesky-comments  3lmshz22xns24 >}}
 
