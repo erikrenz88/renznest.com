@@ -7,7 +7,7 @@ listing:
     contents: "posts/*/*.qmd"
     type: grid
     sort: "date desc"
-    categories: true
+    categories: false
     sort-ui: true
     filter-ui: true
     fields: [image, date, title, subtitle, categories]
@@ -36,7 +36,9 @@ page-layout: full
 :::: {.hero-text}
 # Welcome to The Renz Nest
 
-I'm a data <span style="font-size: 2em;">🂻</span>-of-all-trades. Here, I share my thoughts and experiences on data, technology, and the spread of valueable and honest information.
+💡 Data-driven and versatile: A true data jack-of-all-trades with a passion for connecting dots across disciplines.
+🔍 Getting to the truth: Breaking down complex topics—news, culture, and more—into clear, well-researched insights.
+🌍 Championing honesty: Dedicated to spreading valuable and truthful information that makes a difference.
 ::::
 :::::
 ::::::
