@@ -1,0 +1,37 @@
+.hero-banner {
+    padding: 2em 0;
+    background: linear-gradient(to right, #f8f9fa, #e9ecef);
+    border-bottom: 1px solid #dee2e6;
+}
+
+.content-block {
+    padding: 3rem 0;
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding-left: 1rem;
+    padding-right: 1rem;
+}
+
+.hero-text {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.quarto-grid-item {
+    border: 1px solid #dee2e6;
+    border-radius: 0.25rem;
+    transition: transform 0.2s;
+}
+
+.quarto-grid-item:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.listing-categories .listing-category {
+    background-color: #e9ecef;
+    padding: 0.2em 0.6em;
+    border-radius: 0.25rem;
+    font-size: 0.875em;
+}

@@ -1,0 +1,41 @@
+---
+title: "The Christian Epoch" 
+date: "2025-04-20"
+format:
+  html:
+    include-in-header:
+      text: |
+        <script src="https://cdn.jsdelivr.net/npm/@observablehq/runtime@5/dist/runtime.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/@observablehq/stdlib@5/dist/stdlib.js"></script>
+categories: [christianity, america, news, easter]
+image: "image1.jpg" 
+bluesky-comments:
+  profile: did:plc:q2qeo4572or5zc6vdbgcxjjf
+  mute-patterns:
+    - "📌"
+    - "🔥"
+    - "/\\bspam\\b/i"  # regex pattern
+  filter-empty-replies: true
+---
+I started thinking about this months ago. I went through multiple iterations, considering how to make a catchy start. I even had ChatGPT write a modern parable to pull a classic bait-and-switch after the Man, Himself. It made me realize that would be Jesus speaking, or his digitized self, but not me. So I ditch the trickery and start the pitch.
+
+My religion, has been co-opted. I'm careful not to mince words here because the choice would have drastically different implications. In fact, if it was adopted, I believe we'd be in a much better position. I think the worst part of it is that it was told in the very same way, in the very same book, that handed down my faith. All of this is circumstantial evidence unless there is some data to back up my point, so I'd like to provide some more atpyical data from what I've done previously.
+
+## Exhibit A: 1,000,000 Dollar Bill
+
+![!1,000,000 Bill (front)](IMG_3362.jpeg)
+![$1,000,000 Bill (back) by: [livingwaters.com](www.livingwaters.com)](IMG_3220.jpeg)
+
+A few months ago (post-election), I stumbled upon this at my local gas station, inocuously tucked into the screen to rally the effort behind Donald Trump. If this was political propoganda alone, this would be a different critique - like the complete caracture of one candidate against the stoich resolve of another, intended to be the more serious, albeit derailed by his own ego. Instead, the back of the bill was more disconerting.
+
+Scrawled across the back is seemingly an appropriation of this behavior by the Bible. As in a set of sacred documents dedicated to portraying the top of humanity as those with the most humility and empathy for others. In fact, the use of Matthew 5:28 against a felon, convicted of paying off a woman in the adult film industry that he had relations with, outside his own marital bed. Not to mention the juxtaposition of Ephesians 2: 8 and 9 which convey the depedency of the huamn creature on God for salvation with a man who cannot refrain from mentioning his own affectations in any interview (I'd provide an example but you can find this in any interview he conducts). 
+
+My Bible quotes Jesus as saying, "Give to Caesar what is Caesar's, and to God what is God's." (Matthew 22:15-22, Mark 12:12-17, and Luke 20:20-26). This is a clear indication that Jesus wanted people to be preoccupied by God. The inclusion of quotes from Scripture over damning language and calls to repent and return to God alongside a political background dismisses this response from the very individual the people at Living Waters claim to follow. They go so far as to cryptically include a the Scripture passage 2 Corinthians 13: 5 - "Examine yourselves to see whether you are in the faith; test yourselves. Or do you not realize that Christ Jesus is in you—unless, of course, you fail the test?" - in what I can only imagine is an attempt to tug at the guilt of voters that feel compelled to vote for a democratic candidate.
+
+## Exhibit B: [The White House Holy Week Message 2025](https://www.whitehouse.gov/briefings-statements/2025/04/presidential-message-on-holy-week-2025/)
+
+I have gone through phases of ultraconservative to liberal approaches to my faith only to find myself heding toward the middle every time. I don't use the word hedging lightly, because I know that (1) there is no certainty in the business of faith and (2) perspective changes the lens we look through. There was a time when I thought it was silly not to have everyone saying Merry Christmas and being taught the Ten Commandments, but this was before I experienced other cultures and people more fully. Politics and religion are kept separate for a reason - religion is something someone chooses based on a personal interaction with a faith; politics are policies that impact every person that lives under a particular government which may, or may not, be chosen. Now should the White House choose to issue a similar letter for all major celebrations in all major religions, then I'll concede.
+
+
+Photo by <a href="https://unsplash.com/@codyotto507?utm_content=creditCopyText&utm_medium=referral&utm_source=unsplash">Cody Otto</a> on <a href="https://unsplash.com/photos/an-american-flag-flying-in-the-wind-on-a-pole-jTE_cV0e8uE?utm_content=creditCopyText&utm_medium=referral&utm_source=unsplash">Unsplash</a>
+      

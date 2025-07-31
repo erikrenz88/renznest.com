@@ -2,6 +2,15 @@
 title: "Erik Renz"
 image: profile.jpg
 toc: false
+listing:
+  - id: blog-posts
+    contents: "posts/*/*.qmd"
+    type: grid
+    sort: "date desc"
+    categories: true
+    sort-ui: true
+    filter-ui: true
+    fields: [image, date, title, subtitle, categories]
 about:
   template: jolla
   image-shape: round
@@ -22,7 +31,18 @@ about:
 page-layout: full
 ---
 
-
-## Welcome to The Renz Nest
+:::::: {.hero-banner}
+::::: {.content-block}
+:::: {.hero-text}
+# Welcome to The Renz Nest
 
 I'm a data <span style="font-size: 2em;">🂻</span>-of-all-trades. Here, I share my thoughts and experiences on data, technology, and the spread of valueable and honest information.
+::::
+:::::
+::::::
+
+:::: {.content-block}
+### Recent Posts
+::: {#blog-posts}
+:::
+::::
