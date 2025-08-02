@@ -68,7 +68,7 @@ pacman::p_load(
 
 ```{r}
 # load catechsim for word analysis
-cat_text <- pdf_text('/workspaces/renznest.com/posts/250420-christianity/Catechism of the Catholic Church - USCCB.pdf')
+cat_text <- pdftools::pdf_text('/workspaces/renznest.com/posts/250420-christianity/Catechism of the Catholic Church - USCCB.pdf')
 cat_all <- paste(cat_text, collapse ='\n')
 
 words_to_find <- c('Abortion', 'Homosexual', 'Transgender')
