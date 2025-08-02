@@ -8,9 +8,23 @@ format:
         <script src="https://cdn.jsdelivr.net/npm/@observablehq/runtime@5/dist/runtime.js"></script>
         <script src="https://cdn.jsdelivr.net/npm/@observablehq/stdlib@5/dist/stdlib.js"></script>
 categories: [medicare, medicaid, healthcare, news]
+filters:
+  - social-share
+share:
+  permalink: "https://www.renznest.com/posts/250402-mediprogram/index.html"
+  description: "Who can say goodbye to healthcare? Mostly, the ones that need it."
+  twitter: true
+  facebook: true
+  reddit: true
+  stumble: true
+  tumblr: true
+  linkedin: true
+  email: true
+  mastodon: true
+  bsky: true
 image: "image1.jpg" 
 bluesky-comments:
-  profile: did:plc:q2qeo4572or5zc6vdbgcxjjf
+  profile: https://bsky.app/profile/renznest.com
   mute-patterns:
     - "📌"
     - "🔥"

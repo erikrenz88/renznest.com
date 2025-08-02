@@ -9,8 +9,22 @@ format:
         <script src="https://cdn.jsdelivr.net/npm/@observablehq/stdlib@5/dist/stdlib.js"></script>
 categories: [christianity, america, news, easter]
 image: "image1.jpg" 
+filters:
+  - social-share
+share:
+  permalink: "https://www.renznest.com/posts/250420-christianity/index.html"
+  description: "Christianity is a different philosophy than Conservative political theory."
+  twitter: true
+  facebook: true
+  reddit: true
+  stumble: true
+  tumblr: true
+  linkedin: true
+  email: true
+  mastodon: true
+  bsky: true
 bluesky-comments:
-  profile: did:plc:q2qeo4572or5zc6vdbgcxjjf
+  profile: https://bsky.app/profile/renznest.com
   mute-patterns:
     - "📌"
     - "🔥"
@@ -34,8 +48,223 @@ My Bible quotes Jesus as saying, "Give to Caesar what is Caesar's, and to God wh
 
 ## Exhibit B: [The White House Holy Week Message 2025](https://www.whitehouse.gov/briefings-statements/2025/04/presidential-message-on-holy-week-2025/)
 
-I have gone through phases of ultraconservative to liberal approaches to my faith only to find myself heding toward the middle every time. I don't use the word hedging lightly, because I know that (1) there is no certainty in the business of faith and (2) perspective changes the lens we look through. There was a time when I thought it was silly not to have everyone saying Merry Christmas and being taught the Ten Commandments, but this was before I experienced other cultures and people more fully. Politics and religion are kept separate for a reason - religion is something someone chooses based on a personal interaction with a faith; politics are policies that impact every person that lives under a particular government which may, or may not, be chosen. Now should the White House choose to issue a similar letter for all major celebrations in all major religions, then I'll concede.
+I have gone through phases of ultraconservative to liberal approaches to my faith only to find myself hedging toward the middle every time. I don't use the word hedging lightly, because I know that (1) there is no certainty in the business of faith and (2) perspective changes the lens we look through. There was a time when I thought it was silly not to have everyone saying Merry Christmas and being taught the Ten Commandments, but this was before I experienced other cultures and people more fully. Politics and religion are kept separate for a reason - religion is something someone chooses based on a personal interaction with a faith; politics are policies that impact every person that lives under a particular government which may, or may not, be chosen by the individual. Now should the White House choose to issue a similar letter for all major celebrations in all major religions, then I'll concede. But messages like these and rampant remarks about the Ten Commandments having to be hung in public spaces seem to be more of an imposition instead of freedom of choice. 
 
+Having discussions with other Christians, they feel there was a time where they were oppresed - not able to say Merry Christmas or celebrate their faith fully. My response, as a Christian, would be for them to compare their "oppression" to the oppression faced by those Americans that do not believe in Christianity. I am certain that parents of children in public schools in the 90s (when "Happy Holidays" was first enforced) that felt they could not cut through the commercialized-Christian-Christmas and share their religion with their children. Trees, candy canes, and Santa are the warped view of a Christian Christmas, that was iteself moved to shrink believers of a pagan winter solistice feast. I get trying to promote philosophies when we think they are right, but a paramount belief of Christianity is the gift of Free Will from God. My contention is that if God can allow us to make a choice between God and other dieties, then we as humans should extend the same rights to each other. Surely, true acceptance and believe is only possible when one is given the freedom to choose. God is pretty smart.
+
+## Exhibit C: The Catechism
+```{r}
+library('pacman')
+pacman::p_load(
+  pdftools,
+  dplyr,
+  stringr,
+  tm,
+  tidytext,
+  textdata,
+  tidyr
+)
+```
+
+```{r}
+# load catechsim for word analysis
+cat_text <- pdf_text('/workspaces/renznest.com/posts/250420-christianity/Catechism of the Catholic Church - USCCB.pdf')
+cat_all <- paste(cat_text, collapse ='\n')
+
+words_to_find <- c('Abortion', 'Homosexual', 'Transgender')
+
+text_df <- data.frame(text = cat_all, stringsAsFactors = FALSE)
+
+words_df <- text_df |>
+  unnest_tokens(word, text)
+
+total_words <- nrow(words_df)
+
+word_summary <- words_df |>
+  filter(word %in% tolower(words_to_find)) |>
+  group_by(word) |>
+  summarize(count = n()) |>
+  mutate(frequency = count/total_words) |>
+  arrange(desc(count))
+
+bing_lexicon <- get_sentiments('bing')
+
+sentence_df <- text_df |>
+  unnest_tokens(sentence, text, token = 'sentences')
+
+# Create empty lists to store results
+sentiment_results <- list()
+positive_examples_list <- list()
+negative_examples_list <- list()
+
+for (word in tolower(words_to_find)) {
+  # Find all sentences containing the target word
+  sentences_with_word <- sentence_df %>%
+    filter(str_detect(tolower(sentence), paste0("\\b", word, "\\b")))
+
+  if (nrow(sentences_with_word) > 0) {
+    # Unnest the words from these sentences
+    tidy_sentences <- sentences_with_word %>%
+      mutate(sentence_id = row_number()) %>%
+      unnest_tokens(word, sentence) %>%
+      anti_join(stop_words)
+
+    # Calculate sentiment score for each sentence
+    sentence_sentiment <- tidy_sentences %>%
+      inner_join(bing_lexicon, by = "word") %>%
+      group_by(sentence_id) %>%
+      summarise(sentiment_score = sum(ifelse(sentiment == "positive", 1, -1))) %>%
+      ungroup()
+
+    # Join the scores back to the original sentences
+    sentences_with_score <- sentences_with_word %>%
+      mutate(sentence_id = row_number()) %>%
+      left_join(sentence_sentiment, by = "sentence_id") %>%
+      mutate(
+        sentiment_score = coalesce(sentiment_score, 0),
+        word_analyzed = word  # Add the word being analyzed
+      )
+
+    # Store results in lists
+    sentiment_results[[word]] <- sentences_with_score
+    
+    positive_examples_list[[word]] <- sentences_with_score %>%
+      arrange(desc(sentiment_score)) %>%
+      head(5)
+    
+    negative_examples_list[[word]] <- sentences_with_score %>%
+      arrange(sentiment_score) %>%
+      head(5)
+
+    # Print results as before
+    cat("\n--- Examples for the word:", toupper(word), "---\n")
+    
+    cat("\nTop 5 Positive Examples:\n")
+    if(nrow(positive_examples_list[[word]]) > 0) {
+      print(positive_examples_list[[word]] %>% select(sentence, sentiment_score))
+    } else {
+      cat("No positive examples found.\n")
+    }
+
+    cat("\nTop 5 Negative Examples:\n")
+    if(nrow(negative_examples_list[[word]]) > 0) {
+      print(negative_examples_list[[word]] %>% select(sentence, sentiment_score))
+    } else {
+      cat("No negative examples found.\n")
+    }
+
+  } else {
+    cat("No sentences found containing this word.\n")
+  }
+}
+
+# Convert lists to dataframes if needed
+abortion_sentiments <- sentiment_results[["abortion"]]
+homosexual_sentiments <- sentiment_results[["homosexual"]]
+transgender_sentiments <- sentiment_results[["transgender"]]
+
+# Access positive examples
+abortion_positive <- positive_examples_list[["abortion"]]
+homosexual_positive <- positive_examples_list[["homosexual"]]
+transgender_positive <- positive_examples_list[["transgender"]]
+
+# Access negative examples
+abortion_negative <- negative_examples_list[["abortion"]]
+homosexual_negative <- negative_examples_list[["homosexual"]]
+transgender_negative <- negative_examples_list[["transgender"]]
+
+# Function to find sentences with specific word sequence
+find_word_sequence <- function(sentences, word1, word2) {
+  pattern <- paste0("\\b", word1, "\\s+", word2, "\\b")
+  sentences_with_sequence <- sentences %>%
+    filter(str_detect(tolower(sentence), pattern))
+  return(sentences_with_sequence)
+}
+
+# Get counts for analysis
+homosexual_total <- sentence_df %>%
+  filter(str_detect(tolower(sentence), "\\bhomosexual\\b")) %>%
+  nrow()
+
+homosexual_acts <- find_word_sequence(sentence_df, "homosexual", "acts") %>%
+  nrow()
+
+# Calculate percentage
+percentage <- (homosexual_acts / homosexual_total) * 100
+
+# Print results
+cat("\nAnalysis of 'homosexual acts' usage:\n")
+cat("Total occurrences of 'homosexual':", homosexual_total, "\n")
+cat("Occurrences of 'homosexual acts':", homosexual_acts, "\n")
+cat(sprintf("Percentage of 'homosexual' followed by 'acts': %.2f%%\n", percentage))
+
+# Store results in a dataframe
+word_sequence_analysis <- data.frame(
+  total_occurrences = homosexual_total,
+  sequence_occurrences = homosexual_acts,
+  percentage = percentage
+)
+
+# Make word_summary available to Observable
+word_summary <- word_summary %>%
+  select(word, frequency) %>%
+  arrange(desc(frequency))
+
+ojs_define(work_summary = word_summary)
+```
+
+```{ojs}
+//| label: word-frequencies
+//| echo: false
+
+// Get the word frequencies from R
+frequencies = transpose(word_summary)
+
+// Create a bar chart showing word frequencies
+Plot.plot({
+  width: 800,
+  height: 400,
+  margin: 60,
+  
+  x: {
+    label: "Word →",
+    domain: frequencies.map(d => d.word)
+  },
+  
+  y: {
+    label: "↑ Frequency (%)",
+    transform: x => x * 100,
+    tickFormat: ".4%"
+  },
+  
+  marks: [
+    Plot.barY(frequencies, {
+      x: "word",
+      y: "frequency",
+      fill: d => d.frequency,
+      fillOpacity: 0.8,
+      sort: {x: "-y"},
+      tip: true
+    }),
+    Plot.ruleY([0]),
+    Plot.text(frequencies, {
+      x: "word",
+      y: "frequency",
+      text: d => (d.frequency * 100).toFixed(4) + "%",
+      dy: -10,
+      fontSize: 12
+    })
+  ],
+  
+  style: {
+    backgroundColor: "#ffffff",
+    color: "#333333",
+    fontFamily: "system-ui"
+  }
+})
+```
+
+I know this seems like overkill to start doing text-analysis on a catechism, but I want to make the point clear. The truth of the Christian faith is rooted in love, kidness, and compassion among humans. It is not about whatever is barked about in the media, nor is it about exclusion. So please, check your ego and false assumptions at the door, pick up a Bible and do the work - love.
 
 Photo by <a href="https://unsplash.com/@codyotto507?utm_content=creditCopyText&utm_medium=referral&utm_source=unsplash">Cody Otto</a> on <a href="https://unsplash.com/photos/an-american-flag-flying-in-the-wind-on-a-pole-jTE_cV0e8uE?utm_content=creditCopyText&utm_medium=referral&utm_source=unsplash">Unsplash</a>
       

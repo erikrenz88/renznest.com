@@ -3,8 +3,22 @@ title: "Unconstitutionality"
 date: "2025-02-15"
 categories: [regulations, government, policy]
 image: "image1.jpg" 
+filters:
+  - social-share
+share:
+  permalink: "https://www.renznest.com/posts/250215-regulations/index.html"
+  description: "How much 'unconstitutionality' is there.... really, Doge?"
+  twitter: true
+  facebook: true
+  reddit: true
+  stumble: true
+  tumblr: true
+  linkedin: true
+  email: true
+  mastodon: true
+  bsky: true
 bluesky-comments:
-  profile: did:plc:q2qeo4572or5zc6vdbgcxjjf
+  profile: https://bsky.app/profile/renznest.com
   mute-patterns:
     - "/\\bspam\\b/i"
     - "📌"

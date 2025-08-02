@@ -11,21 +11,35 @@ listing:
     sort-ui: true
     filter-ui: true
     fields: [image, date, title, subtitle, categories]
+filters:
+  - social-share
+share:
+  permalink: "https://renznest.com/"
+  description: "The Renz Nest: Data-driven, honest articles and why they matter"
+  twitter: true
+  facebook: true
+  reddit: true
+  stumble: true
+  tumblr: true
+  linkedin: true
+  email: true
+  mastodon: true
+  bsky: true
 about:
   template: jolla
   image-shape: round
   image-width: 15em
   links:
-    - text: "{{< iconify fa6-brands:bluesky size=3x >}}"
+    - text: "{{< iconify fa6-brands:bluesky size=2x >}}"
       href: https://bsky.app/profile/renznest.com
       aria-label: "Bluesky icon that links to the Bluesky profile of Erik Renz"
-    - text: "{{< iconify fa6-brands:github size=3x >}}"
+    - text: "{{< iconify fa6-brands:github size=2x >}}"
       href: https://github.com/erikrenz88
       aria-label: "Github icon the links to the public GitHub profile of Erik Renz"
-    - text: "{{< iconify fa6-brands:linkedin size=3x >}}"
+    - text: "{{< iconify fa6-brands:linkedin size=2x >}}"
       href: https://linkedin.com/in/erikrenz
       aria-label: "LinkedIn icon that links to the LinkedIn profile of Erik Renz"
-    - text: "{{< iconify fa6-brands:researchgate size=3x >}}"
+    - text: "{{< iconify fa6-brands:researchgate size=2x >}}"
       href: https://www.researchgate.net/profile/Erik-Renz
       aria-label: "ResearchGate icon that links to the ResearchGate profile of Erik Renz"
 page-layout: full
