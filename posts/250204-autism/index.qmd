@@ -3,20 +3,6 @@ title: "Autism"
 date: "2025-02-04"
 categories: [autism, vaccines, news]
 image: "thumbnail.jpg" 
-filters:
-  - social-share
-share:
-  permalink: "https://www.renznest.com/posts/250204-autism/index.html"
-  description: "How autism grew 2899900% (hint: it didn't)"
-  twitter: true
-  facebook: true
-  reddit: true
-  stumble: true
-  tumblr: true
-  linkedin: true
-  email: true
-  mastodon: true
-  bsky: true
 bluesky-comments:
   profile: https://bsky.app/profile/renznest.com
   mute-patterns:
