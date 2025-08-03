@@ -67,8 +67,13 @@ pacman::p_load(
 ```
 
 ```{r}
+# catechism pdf url
+cat_url <- 'https://media.githubusercontent.com/media/erikrenz88/renznest.com/refs/heads/main/posts/250420-christianity/Catechism_of_the_Catholic_Church.pdf'
+
+cat_pdf <- download.file(cat_url)
+
 # load catechsim for word analysis
-cat_text <- pdftools::pdf_text('posts/250420-christianity/Catechism of the Catholic Church - USCCB.pdf')
+cat_text <- pdftools::pdf_text(cat_pdf)
 cat_all <- paste(cat_text, collapse ='\n')
 
 words_to_find <- c('Abortion', 'Homosexual', 'Transgender')
