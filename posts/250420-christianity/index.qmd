@@ -62,23 +62,23 @@ pacman::p_load(
   tm,
   tidytext,
   textdata,
-  tidyr
+  tidyr,
+  here
 )
 ```
 
 ```{r}
-# catechism pdf url
-cat_url <- 'https://media.githubusercontent.com/media/erikrenz88/renznest.com/refs/heads/main/posts/250420-christianity/Catechism_of_the_Catholic_Church.pdf'
+pdf_path <- here("posts", "250420-christianity", "Catechism_of_the_Catholic_Church.pdf")
 
-cat_pdf <- download.file(cat_url)
+cat_pdf <- pdftools::pdf_text(pdf_path)
 
 # load catechsim for word analysis
-cat_text <- pdftools::pdf_text(cat_pdf)
-cat_all <- paste(cat_text, collapse ='\n')
-
-words_to_find <- c('Abortion', 'Homosexual', 'Transgender')
+cat_all <- paste(cat_pdf, collapse ='\n')
 
 text_df <- data.frame(text = cat_all, stringsAsFactors = FALSE)
+```
+```{r}
+words_to_find <- c('Abortion', 'Homosexual', 'Transgender', 'Love', 'Compassion', 'Equality')
 
 words_df <- text_df |>
   unnest_tokens(word, text)
@@ -89,8 +89,20 @@ word_summary <- words_df |>
   filter(word %in% tolower(words_to_find)) |>
   group_by(word) |>
   summarize(count = n()) |>
-  mutate(frequency = count/total_words) |>
   arrange(desc(count))
+
+# Add total words row
+word_summary <- bind_rows(
+  word_summary,
+  data.frame(
+    word = "total",
+    count = total_words
+  )
+) |>
+  arrange(desc(count))
+
+# Make available to Observable
+ojs_define(word_summary = word_summary)
 
 bing_lexicon <- get_sentiments('bing')
 
@@ -215,17 +227,28 @@ word_summary <- word_summary %>%
   select(word, frequency) %>%
   arrange(desc(frequency))
 
-ojs_define(work_summary = word_summary)
+ojs_define(word_summary = word_summary)
 ```
 
 ```{ojs}
 //| label: word-frequencies
 //| echo: false
 
-// Get the word frequencies from R
+// Define custom colors for each word
+colors = {
+  total: "#91A8C7",
+  love: "#97C594",
+  compassion: "#75B09C",
+  equality: "#7CA88D",
+  abortion: "#E0BE36",
+  homosexual: "#CA1551",
+  transgender: "#FB4D3D"
+}
+
+// Get the word counts from R
 frequencies = transpose(word_summary)
 
-// Create a bar chart showing word frequencies
+// Create a bar chart showing word counts
 Plot.plot({
   width: 800,
   height: 400,
@@ -237,35 +260,28 @@ Plot.plot({
   },
   
   y: {
-    label: "↑ Frequency (%)",
-    transform: x => x * 100,
-    tickFormat: ".4%"
+    label: "↑ Count (words)",
+    domain: [0, d3.max(frequencies, d => d.count)]
   },
   
   marks: [
     Plot.barY(frequencies, {
       x: "word",
-      y: "frequency",
-      fill: d => d.frequency,
-      fillOpacity: 0.8,
+      y: "count",
+      fill: d => colors[d.word] || "#999999",
+      fillOpacity: d => d.word === "total" ? 0.3 : 0.8,
       sort: {x: "-y"},
       tip: true
     }),
     Plot.ruleY([0]),
     Plot.text(frequencies, {
       x: "word",
-      y: "frequency",
-      text: d => (d.frequency * 100).toFixed(4) + "%",
+      y: "count",
+      text: d => d3.format(",")(d.count),
       dy: -10,
       fontSize: 12
     })
-  ],
-  
-  style: {
-    backgroundColor: "#ffffff",
-    color: "#333333",
-    fontFamily: "system-ui"
-  }
+  ]
 })
 ```
 
