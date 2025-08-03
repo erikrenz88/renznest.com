@@ -101,9 +101,6 @@ word_summary <- bind_rows(
 ) |>
   arrange(desc(count))
 
-# Make available to Observable
-ojs_define(word_summary = word_summary)
-
 bing_lexicon <- get_sentiments('bing')
 
 sentence_df <- text_df |>
@@ -221,11 +218,6 @@ word_sequence_analysis <- data.frame(
   sequence_occurrences = homosexual_acts,
   percentage = percentage
 )
-
-# Make word_summary available to Observable
-word_summary <- word_summary %>%
-  select(word, frequency) %>%
-  arrange(desc(frequency))
 ```
 
 ```{r}
