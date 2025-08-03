@@ -226,7 +226,10 @@ word_sequence_analysis <- data.frame(
 word_summary <- word_summary %>%
   select(word, frequency) %>%
   arrange(desc(frequency))
+```
 
+```{r}
+#| cache: false
 ojs_define(word_summary = word_summary)
 ```
 
