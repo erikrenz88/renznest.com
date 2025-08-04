@@ -2,7 +2,22 @@
 title: "Autism"
 date: "2025-02-04"
 categories: [autism, vaccines, news]
-image: "thumbnail.jpg" 
+image: "thumbnail.jpg"
+filters:
+  - social-share
+share:
+  permalink: "https://www.renznest.com/posts/250204-autism/index.html"
+  description: "Autism prevelance through the roof? Highly unlikely."
+  location: "before-body"
+  twitter: true
+  facebook: true
+  reddit: true
+  stumble: true
+  tumblr: true
+  linkedin: true
+  email: true
+  mastodon: true
+  bsky: true
 bluesky-comments:
   profile: https://bsky.app/profile/renznest.com
   mute-patterns:

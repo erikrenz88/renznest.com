@@ -13,6 +13,7 @@ filters:
 share:
   permalink: "https://www.renznest.com/posts/250402-mediprogram/index.html"
   description: "Who can say goodbye to healthcare? Mostly, the ones that need it."
+  location: "before-body"
   twitter: true
   facebook: true
   reddit: true

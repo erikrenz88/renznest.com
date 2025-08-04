@@ -7,7 +7,8 @@ filters:
   - social-share
 share:
   permalink: "https://www.renznest.com/posts/250215-regulations/index.html"
-  description: "How much 'unconstitutionality' is there.... really, Doge?"
+  description: "How much 'unconstitutionality' is there.... really, DOGE?"
+  location: "before-body"
   twitter: true
   facebook: true
   reddit: true

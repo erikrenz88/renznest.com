@@ -14,6 +14,7 @@ filters:
 share:
   permalink: "https://www.renznest.com/posts/250420-christianity/index.html"
   description: "Christianity is a different philosophy than Conservative political theory."
+  location: "before-body"
   twitter: true
   facebook: true
   reddit: true
@@ -53,7 +54,7 @@ I have gone through phases of ultraconservative to liberal approaches to my fait
 Having discussions with other Christians, they feel there was a time where they were oppresed - not able to say Merry Christmas or celebrate their faith fully. My response, as a Christian, would be for them to compare their "oppression" to the oppression faced by those Americans that do not believe in Christianity. I am certain that parents of children in public schools in the 90s (when "Happy Holidays" was first enforced) that felt they could not cut through the commercialized-Christian-Christmas and share their religion with their children. Trees, candy canes, and Santa are the warped view of a Christian Christmas, that was iteself moved to shrink believers of a pagan winter solistice feast. I get trying to promote philosophies when we think they are right, but a paramount belief of Christianity is the gift of Free Will from God. My contention is that if God can allow us to make a choice between God and other dieties, then we as humans should extend the same rights to each other. Surely, true acceptance and believe is only possible when one is given the freedom to choose. God is pretty smart.
 
 ## Exhibit C: The Catechism
-```{r}
+```{r, echo = FALSE}
 library('pacman')
 pacman::p_load(
   pdftools,
@@ -67,7 +68,7 @@ pacman::p_load(
 )
 ```
 
-```{r}
+```{r, echo = FALSE}
 pdf_path <- here("posts", "250420-christianity", "Catechism_of_the_Catholic_Church.pdf")
 
 cat_pdf <- pdftools::pdf_text(pdf_path)
@@ -220,7 +221,7 @@ word_sequence_analysis <- data.frame(
 )
 ```
 
-```{r}
+```{r, echo = FALSE}
 #| cache: false
 ojs_define(word_summary = word_summary)
 ```
@@ -231,13 +232,13 @@ ojs_define(word_summary = word_summary)
 
 // Define custom colors for each word
 colors = {
-  total: "#91A8C7",
-  love: "#97C594",
-  compassion: "#75B09C",
-  equality: "#7CA88D",
-  abortion: "#E0BE36",
-  homosexual: "#CA1551",
-  transgender: "#FB4D3D"
+  total: '#91A8C7',
+  love: '#97C594',
+  compassion: '#75B09C',
+  equality: '#7CA88D',
+  abortion: '#E0BE36',
+  homosexual: '#CA1551',
+  transgender: '#FB4D3D'
 }
 
 // Get the word counts from R
