@@ -78,7 +78,8 @@ cat_all <- paste(cat_pdf, collapse ='\n')
 
 text_df <- data.frame(text = cat_all, stringsAsFactors = FALSE)
 ```
-```{r, echo = FALSE}
+```{r, results="hide"}
+#| echo: false
 words_to_find <- c('Abortion', 'Homosexual', 'Transgender', 'Love', 'Compassion', 'Equality')
 
 words_df <- text_df |>
@@ -89,18 +90,21 @@ total_words <- nrow(words_df)
 word_summary <- words_df |>
   filter(word %in% tolower(words_to_find)) |>
   group_by(word) |>
-  summarize(count = n()) |>
-  arrange(desc(count))
+  summarize(
+    count = n(),
+    frequency = n() / total_words 
+  ) |>
+  arrange(desc(frequency))
 
-# Add total words row
 word_summary <- bind_rows(
   word_summary,
   data.frame(
     word = "total",
-    count = total_words
+    count = total_words,
+    frequency = 1
   )
 ) |>
-  arrange(desc(count))
+  arrange(desc(frequency))
 
 bing_lexicon <- get_sentiments('bing')
 
@@ -240,15 +244,14 @@ Plot.plot({
   width: 800,
   height: 400,
   margin: 60,
-  
   x: {
     label: "Word →",
     domain: ['total', 'love', 'compassion', 'equality', 'abortion', 'homosexual', 'transgender']
   },
-  
   y: {
-    label: "↑ Count (words)",
-    domain: [0, d3.max(frequencies, d => d.count)]
+    label: "↑ Frequency (%)",
+    domain: [0, d3.max(frequencies, d => d.frequency)],
+    tickFormat: d => d3.format(".2%")(d) 
   },
   color: {
     legend: true, 
@@ -259,8 +262,8 @@ Plot.plot({
   marks: [
     Plot.barY(frequencies, {
       x: "word",
-      y: "count",
-      fill: 'word',
+      y: "frequency",
+      fill: "word",
       fillOpacity: d => d.word === "total" ? 0.3 : 0.8,
       sort: {x: "-y"},
       tip: true
@@ -268,8 +271,8 @@ Plot.plot({
     Plot.ruleY([0]),
     Plot.text(frequencies, {
       x: "word",
-      y: "count",
-      text: d => d3.format(",")(d.count),
+      y: "frequency",
+      text: d => d3.format(".4%")(d.frequency),  
       dy: -10,
       fontSize: 12
     })

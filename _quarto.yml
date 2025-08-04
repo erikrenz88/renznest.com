@@ -54,4 +54,4 @@ execute:
   message: false
   warning: false
   freeze: auto
-  cahce: true
+  cache: true
