@@ -78,7 +78,7 @@ cat_all <- paste(cat_pdf, collapse ='\n')
 
 text_df <- data.frame(text = cat_all, stringsAsFactors = FALSE)
 ```
-```{r}
+```{r, echo = FALSE}
 words_to_find <- c('Abortion', 'Homosexual', 'Transgender', 'Love', 'Compassion', 'Equality')
 
 words_df <- text_df |>
@@ -229,17 +229,8 @@ ojs_define(word_summary = word_summary)
 ```{ojs}
 //| label: word-frequencies
 //| echo: false
-
-// Define custom colors for each word
-colors = {
-  total: '#91A8C7',
-  love: '#97C594',
-  compassion: '#75B09C',
-  equality: '#7CA88D',
-  abortion: '#E0BE36',
-  homosexual: '#CA1551',
-  transgender: '#FB4D3D'
-}
+//| warning: false
+//| message: false
 
 // Get the word counts from R
 frequencies = transpose(word_summary)
@@ -252,19 +243,24 @@ Plot.plot({
   
   x: {
     label: "Word →",
-    domain: frequencies.map(d => d.word)
+    domain: ['total', 'love', 'compassion', 'equality', 'abortion', 'homosexual', 'transgender']
   },
   
   y: {
     label: "↑ Count (words)",
     domain: [0, d3.max(frequencies, d => d.count)]
   },
-  
+  color: {
+    legend: true, 
+    domain: ['total', 'love', 'compassion', 'equality', 'abortion', 'homosexual', 'transgender'],
+    range: ['#91A8C7', '#97C594', '#75B09C', '#7CA88D', '#E0BE36', '#CA1551', '#FB4D3D'],
+    tickFormat: text => text.replace(/_/g, " ").replace(/^./, str => str.toUpperCase()) 
+  },
   marks: [
     Plot.barY(frequencies, {
       x: "word",
       y: "count",
-      fill: d => colors[d.word] || "#999999",
+      fill: 'word',
       fillOpacity: d => d.word === "total" ? 0.3 : 0.8,
       sort: {x: "-y"},
       tip: true
