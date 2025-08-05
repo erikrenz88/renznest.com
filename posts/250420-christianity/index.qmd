@@ -96,16 +96,6 @@ word_summary <- words_df |>
   ) |>
   arrange(desc(frequency))
 
-word_summary <- bind_rows(
-  word_summary,
-  data.frame(
-    word = "total",
-    count = total_words,
-    frequency = 1
-  )
-) |>
-  arrange(desc(frequency))
-
 bing_lexicon <- get_sentiments('bing')
 
 sentence_df <- text_df |>
@@ -246,7 +236,7 @@ Plot.plot({
   margin: 60,
   x: {
     label: "Word →",
-    domain: ['total', 'love', 'compassion', 'equality', 'abortion', 'homosexual', 'transgender']
+    domain: ['love', 'compassion', 'equality', 'abortion', 'homosexual', 'transgender']
   },
   y: {
     label: "↑ Frequency (%)",
@@ -255,8 +245,8 @@ Plot.plot({
   },
   color: {
     legend: true, 
-    domain: ['total', 'love', 'compassion', 'equality', 'abortion', 'homosexual', 'transgender'],
-    range: ['#91A8C7', '#97C594', '#75B09C', '#7CA88D', '#E0BE36', '#CA1551', '#FB4D3D'],
+    domain: ['love', 'compassion', 'equality', 'abortion', 'homosexual', 'transgender'],
+    range: ['#97C594', '#75B09C', '#7CA88D', '#E0BE36', '#CA1551', '#FB4D3D'],
     tickFormat: text => text.replace(/_/g, " ").replace(/^./, str => str.toUpperCase()) 
   },
   marks: [
@@ -264,7 +254,7 @@ Plot.plot({
       x: "word",
       y: "frequency",
       fill: "word",
-      fillOpacity: d => d.word === "total" ? 0.3 : 0.8,
+      fillOpacity: 0.8, 
       sort: {x: "-y"},
       tip: true
     }),
@@ -272,11 +262,14 @@ Plot.plot({
     Plot.text(frequencies, {
       x: "word",
       y: "frequency",
-      text: d => d3.format(".4%")(d.frequency),  
+      text: d => d3.format(".4%")(d.frequency),
       dy: -10,
       fontSize: 12
     })
-  ]
+  ],
+  style: {
+    backgroundColor: "transparent" 
+  }
 })
 ```
 
