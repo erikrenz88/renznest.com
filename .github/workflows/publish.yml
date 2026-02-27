@@ -79,9 +79,7 @@ jobs:
           
       - name: Render standalone workproduct (self-contained)
         run: |
-          quarto render analysis/workproduct.qmd
-          mkdir -p private
-          mv analysis/workproduct.html private/workproduct.html
+          quarto render private/workproduct.qmd
 
       - name: 🏗 Build Quarto Website
         uses: quarto-dev/quarto-actions/render@v2
