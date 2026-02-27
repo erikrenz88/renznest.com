@@ -31,7 +31,8 @@ execute:
 ## import packages and datasets
 library('pacman')
 pacman::p_load(
-    tidyverse,
+    tidyr,
+    dplyr,
     ggplot2,
     wbstats,
     skimr,
