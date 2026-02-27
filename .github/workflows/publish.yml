@@ -76,6 +76,12 @@ jobs:
           wget -qO- https://quarto.org/download/latest/quarto-linux-amd64.deb > quarto.deb
           sudo dpkg -i quarto.deb
           quarto check
+          
+      - name: Render standalone workproduct (self-contained)
+        run: |
+          quarto render analysis/workproduct.qmd
+          mkdir -p private
+          mv analysis/workproduct.html private/workproduct.html
 
       - name: 🏗 Build Quarto Website
         uses: quarto-dev/quarto-actions/render@v2
