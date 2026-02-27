@@ -29,6 +29,7 @@ execute:
 :::
 ```{r, label = 'package import and dataset idenfication'}
 ## import packages and datasets
+library('pacman')
 pacman::p_load(
     tidyverse,
     ggplot2,
