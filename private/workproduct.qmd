@@ -1,0 +1,291 @@
+---
+title: "Economic Development and Internet Access"
+author: "Erik Renz"
+date: "`r Sys.Date()`"
+html:
+    embed-resources: true
+execute:
+  warning: false
+  message: false
+  echo: false
+---
+
+## Situation, Background, Assessment, Recommendation (SBAR)
+::: {.callout-note title='TL;DR'}
+* **Situation**: The world has changed a lot in the past quarter century, with development happening along multiple fronts.
+* **Background (questions)**:
+    - Over the last ten years or so, how do you observe GDP per capita growth being related to Internet access?
+    - Do you see distinct clusters of development trajectories by geographic region or income group?
+* **Assessment**: 
+    - First pass analysis showed a weak, unconfident correlation between internet access and per capita GDP growth; and
+    - There is some relationship, especially when broken out by income group of the countries, but these are still weak and unconfident relationships.
+* **Recommendations**:
+    - Indicators are imperfect (i.e. Internet access is based off survey completion);
+    - Factors are multifaceted. More factors are needed to understand the relationship between Internet access and per capita GDP; and
+    - Continue with models with more factors to identify which indicators are more strongly correlated and perhaps reframe original question.
+:::
+```{r, label = 'package import and dataset idenfication'}
+## import packages and datasets
+pacman::p_load(
+    tidyverse,
+    ggplot2,
+    wbstats,
+    skimr,
+    nlme,
+    knitr
+)
+
+# data discovery for world data bank
+gdp_indicators <- wb_search("GDP growth")
+# looking specifically for GDP per capita so limiting to ID: 5.51.01.10.gdp - this data was located in a separate source so restricted to availability by default in R package
+# used: NY.GDP.MKTP.KD.ZG as GDP growth (annual %)
+
+internet_indicators <- wb_search("internet")
+# good for some comparison data: gwp2_n_3 and gwp2_n_4 - internet access by income
+# most likely best comparison for per capita: IT.NET.USER.ZS - percent of population that uses internet by any means in the last 3 months
+# notes for consideration - question is not specific about correlation between modes or frequency of use or infrastructure/availability
+# could expand with IT.NET.BNDW.PC to look at bits per person to help proxy availability
+```
+```{r, label = 'primary dataset pull', include = F}
+indicators <- c(
+    'NY.GDP.PCAP.KD.ZG', # GDP per capita
+    'IT.NET.USER.ZS',  # % population that uses internet by any means in last 3 months
+    'NY.GDP.MKTP.KD' # Constant 2015 US dollars (real) to compare GDP across years in USD with inflation removed
+)
+
+countries_meta <- wb_countries() |> select(iso3c, income_level, region)
+
+df <- wb_data(
+    indicator = indicators,
+    start_date = 2014,
+    end_date = 2024,
+    return_wide = TRUE # country per row
+) |> 
+    left_join(countries_meta, by = "iso3c")
+
+ojs_define(data = df)
+```
+
+###### Multiple countries can be selected by ctrl/cmd + click. Tooltips available on GDP trend lines. 
+```{ojs}
+df = transpose(data)
+
+all_countries = [...new Set(df.map(d => d.country).filter(Boolean)).values()].sort()
+
+default_countries = ["Guyana", "Honduras", "Hong Kong SAR, China", "Iceland", "Iran, Islamic Rep", "Jamaica", "Jordan", "United States"]
+
+viewof facet_by = Inputs.radio(["Income Level", "Region"], {
+  label: "Facet by",
+  value: "Income Level"
+})
+
+viewof selected_countries = Inputs.select(all_countries, {
+  label: "Countries",
+  multiple: true,
+  value: default_countries
+})
+
+filtered = df.filter(d => selected_countries.includes(d.country))
+
+facet_field = facet_by === "Income Level" ? "income_level" : "region"
+
+active_facets = [...new Set(filtered.map(d => d[facet_field]).filter(Boolean)).values()]
+
+Plot.plot({
+  facet: {
+    data: filtered,
+    y: facet_field
+  },
+  fy: {
+    label: null,
+    domain: active_facets
+  },
+  x: { label: "Year", tickFormat: d => String(d) },
+  y: { label: "%" },
+  color: {
+    legend: true,
+    label: "Country"
+  },
+  marks: [
+    Plot.frame({ stroke: "rgba(0,0,0,0.15)", facet: "include" }),
+    Plot.lineY(filtered, {
+      x: "date",
+      y: d => d["IT.NET.USER.ZS"],
+      stroke: "country",
+      strokeWidth: 2,
+      facet: "include"
+    }),
+    Plot.lineY(filtered, {
+      x: "date",
+      y: d => d["NY.GDP.PCAP.KD.ZG"],
+      stroke: "country",
+      strokeWidth: 2,
+      strokeDasharray: "8,6",
+      facet: "include"
+    }),
+    Plot.tip(filtered, Plot.pointer({
+      x: "date",
+      y: d => d["NY.GDP.PCAP.KD.ZG"],
+      stroke: "country",
+      facet: "include",
+      title: d => `${d.country} (${d.date})\nInternet Usage: ${d["IT.NET.USER.ZS"]?.toFixed(1)}%\nGDP/Cap Growth: ${d["NY.GDP.PCAP.KD.ZG"]?.toFixed(1)}%`
+    })),
+    Plot.ruleY([0], { stroke: "rgba(0,0,0,0.15)" })
+  ],
+  width: 620,
+  height: 280 * Math.max(active_facets.length, 1),
+  marginLeft: 45,
+  marginRight: 120,
+  caption: "Solid lines — Internet Users (% of population)  ╌╌  Dashed lines — GDP Per Capita Growth (%)"
+})
+```
+
+## Analysis
+
+### Intro
+In the last quarter century, the economy has changed a great deal with the rise of the personal computer and reduction in compute costs
+alongside infrastructure development to use technology. This has caused a shift in economic activity away from an industrial age to a digital age.
+As this age matured, there were questions about socioeconomic effects of the digital age. One of these relates to the disparity of wealth, in particular, does lower digital infrastructure participation limit a country's per capita economic growth?
+
+### Methods
+The answer to this question requires global data on per capita GDP estimated over the last quarter century, and proxy indicators for digital infrastructure. The World Data Bank (https://databank.worldbank.org) contains per capita GDP annual % growth (indicator: NY.GDP.MKTP.KD.ZG) and numerous indicators that relate to the internet, which is used as a proxy for digital infrastructure. Indicator IT.NET.USER.ZS was used as the primary comparison source, showing percent of population that accessed the internet by any means in the last 3 months. 
+
+**N.B.** For the purposes of this analysis, access was used as a primary proxy for digital infrastructure and ignored other barriers including modes of use (cell phone, desktop, personal or public, etc.) and frequency of use (i.e. not accounting for traveling distance once a week/month to access vs. personal access at home).
+
+The indicators were pulled by country between 2014 and 2024 to limit data size.
+
+#### Cleaning
+Not every country had data for the time period checked for either GDP or Internet access by individual. Countries that did not have the full 10 years were considered for removal, though the completion rates were quite high (Internet:`r scales::percent(skim(df$IT.NET.USER.ZS)$complete_rate)` and GDP: `r scales::percent(skim(df$NY.GDP.PCAP.KD.ZG)$complete_rate)`). An additional dataset (NY.GDP.MKTP.KD - GDP in constant 2015 USD dollars) was pulled. The countries missing data mean they may misrepresent a 10 year time series.
+```{r, label = 'skim dataset', include = T}
+df %>%
+  skim(IT.NET.USER.ZS, NY.GDP.PCAP.KD.ZG) %>%
+  yank("numeric") %>%
+  select(-hist) %>%
+  kable(digits = 2)
+```
+
+```{r, label = 'cleaning', include = F}
+countries_to_keep <- df |>
+    group_by(country) |>
+    summarize(
+        missing_int = sum(is.na(`IT.NET.USER.ZS`)),
+        missing_gdp = sum(is.na(`NY.GDP.PCAP.KD.ZG`)),
+    ) |>
+    filter(missing_gdp == 0, missing_int == 0) |>
+    pull(country)
+
+clean <- df |>
+    filter(country %in% countries_to_keep)
+
+# used Claude to generate the plot quickly
+df_agg <- df |>
+  group_by(country, income_level) |>
+  summarize(
+    avg_gdp      = mean(NY.GDP.PCAP.KD.ZG, na.rm = TRUE),
+    avg_internet = mean(IT.NET.USER.ZS, na.rm = TRUE)
+  ) |>
+  filter(country != 'Guyana')
+
+df_agg2 <- df |>
+  group_by(country, region) |>
+  summarize(
+    avg_gdp      = mean(NY.GDP.PCAP.KD.ZG, na.rm = TRUE),
+    avg_internet = mean(IT.NET.USER.ZS, na.rm = TRUE)
+  ) |>
+  filter(country != 'Guyana')
+```
+
+This leads to the hypothesis that if there is strong correlation between internet use by population percentage and per capita GDP growth, then we can extrapolate to countries with missing data using the income level in the countries dataset that World Data Bank provides. Statistical tests were done below to try and prove this was the case.
+
+#### Correlation of Variables
+The next step was to identify the relationship between the percent of the population using the internet in the last three months compared to the per capita GDP growth rate. The simplest approach was to aggregate the countries, averaging these growth rates and internet usages rates across their years.
+
+```{r, label = 'correlation plot'} 
+ggplot(df_agg, aes(x = avg_internet, y = avg_gdp, label = country)) +
+  geom_point(color = "steelblue") +
+  geom_smooth(method = "lm", color = "red", se = TRUE) +
+  geom_text(size = 2.5, vjust = -0.7, check_overlap = TRUE) +
+  labs(x = "Avg Internet Users (% of population)",
+       y = "Avg GDP Per Capita Growth (%)",
+       title = "Internet Usage vs GDP Per Capita Growth (Country Averages)") +
+  theme_minimal()
+```
+
+#### Group by Income Level & Region to tease out relationships
+The correlation between these variables was not strong in significance or confidence which led to questioning additional factors, for example, the relative income levels of each country (low, lower middle, upper middle, high) as defined by the World Data Bank, or their geographic regions.
+
+##### Grouped by Income Level
+```{r, label = "simpon's paradox", include = F}
+ggplot(df_agg, aes(x = avg_internet, y = avg_gdp, color = income_level)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE) +
+  labs(x = "Avg Internet Users (% of population)",
+       y = "Avg GDP Per Capita Growth (%)",
+       title = "Internet Usage vs GDP Per Capita Growth (Country Averages) by Income Level") +
+  theme_minimal()
+```
+
+```{r, label = 'correlation statistics', include = F}
+cor.test(df_agg$avg_gdp, df_agg$avg_internet)
+```
+
+```{r, label = 'grouped by income'}
+ggplot(df_agg, aes(x = avg_internet, y = avg_gdp)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = TRUE) +
+  facet_wrap(~ income_level) +
+  labs(x = "Avg Internet Users (%)", y = "Avg GDP Per Capita Growth (%)", title = "Internet Usage vs GDP Per Capita Growth (Country Averages) by Income Level") +
+  theme_minimal()
+```
+
+##### Grouped by Region
+```{r, label = 'statistics by group region', include = F}
+df_agg2 |>
+  group_by(region) |>
+  filter(n() > 3) |>
+  group_modify(~ cor.test(.x$avg_internet, .x$avg_gdp) |> broom::tidy()) |>
+  ungroup() |>
+  kable(digits = 2)
+```
+
+```{r, label = "simpon's paradox region", include = F}
+ggplot(df_agg2, aes(x = avg_internet, y = avg_gdp, color = region)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE) +
+  labs(x = "Avg Internet Users (% of population)",
+       y = "Avg GDP Per Capita Growth (%)",
+       title = "Internet Usage vs GDP Per Capita Growth (Country Averages) by Region") +
+  theme_minimal()
+```
+
+```{r, label = 'correlation statistics region', include = F}
+cor.test(df_agg2$avg_gdp, df_agg$avg_internet)
+```
+
+```{r, label = 'grouped by region'}
+ggplot(df_agg2, aes(x = avg_internet, y = avg_gdp)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = TRUE) +
+  facet_wrap(~ region) +
+  labs(x = "Avg Internet Users (%)", y = "Avg GDP Per Capita Growth (%)", title = "Internet Usage vs GDP Per Capita Growth (Country Averages) by Region") +
+  theme_minimal()
+```
+
+```{r, label = 'statistics by region', include = F}
+df_agg2 |>
+  group_by(region) |>
+  filter(n() > 3) |>
+  group_modify(~ cor.test(.x$avg_internet, .x$avg_gdp) |> broom::tidy()) |>
+  ungroup() |>
+  kable(digits = 2)
+```
+
+## Results
+Ultimately, the statistical tests showed limited and uncertain correlation between internet usage (access on any platform in the last three months, percent of population) and the per capita GDP growth rate, but requires exploration of further indicators. This aligns with the understanding that GDP growth is driven by many factors including political stability, trade, pricing, and development, to name a few.
+
+Suggested next analyses include use of additional proxy indicators:
+
+- gwp2_n_3 and gwp2_n_4 (internet access by income)
+- IT.NET.BNDW.PC (bits per person)
+
+There will be limitations in survey-based internet usage data which gives measurement uncertainty. This should be weighed in interpretation of results but does not invalidate the analysis as a starting point.
