@@ -4,6 +4,9 @@ author: "Erik Renz"
 date: "`r Sys.Date()`"
 html:
     embed-resources: true
+    include-in-header:
+      text: |
+        <meta name="robots" content="noindex, nofollow">
 execute:
   warning: false
   message: false
