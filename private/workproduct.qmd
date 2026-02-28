@@ -39,7 +39,8 @@ pacman::p_load(
     wbstats,
     skimr,
     nlme,
-    knitr
+    knitr,
+    broom
 )
 
 # data discovery for world data bank
