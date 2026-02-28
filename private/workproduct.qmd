@@ -7,6 +7,8 @@ html:
     include-in-header:
       text: |
         <meta name="robots" content="noindex, nofollow">
+        <script src="https://cdn.jsdelivr.net/npm/@observablehq/runtime@5/dist/runtime.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/@observablehq/stdlib@5/dist/stdlib.js"></script>
 execute:
   warning: false
   message: false
@@ -52,6 +54,7 @@ internet_indicators <- wb_search("internet")
 # could expand with IT.NET.BNDW.PC to look at bits per person to help proxy availability
 ```
 ```{r, label = 'primary dataset pull', include = F}
+#| cache: false
 indicators <- c(
     'NY.GDP.PCAP.KD.ZG', # GDP per capita
     'IT.NET.USER.ZS',  # % population that uses internet by any means in last 3 months
