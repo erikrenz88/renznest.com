@@ -76,6 +76,10 @@ jobs:
             gdal-bin
           Rscript -e '.libPaths(c(Sys.getenv("R_LIBS_USER"), .libPaths())); if (!requireNamespace("pak", quietly=TRUE)) install.packages("pak", repos = "https://cloud.r-project.org"); pak::pkg_install(c("sf", "tigris", "units", "tidycensus", "chromote", "reactable", "scales", "htmltools", "RSelenium", "readxl", "magrittr"))'
 
+      - name: 🔧 Install reactablefmtr
+        run: |
+          Rscript -e '.libPaths(c(Sys.getenv("R_LIBS_USER"), .libPaths())); install.packages("reactablefmtr", repos = "https://cloud.r-project.org", dependencies = TRUE)'
+
       - name: 🔧 Verify R packages
         run: |
           Rscript -e 'cat(.libPaths(), sep="\n"); library(rmarkdown); cat("rmarkdown loaded\n")'
