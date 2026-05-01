@@ -13,7 +13,8 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      CENSUS_API_KEY: ${{ secrets.CENSUS_API_KEY }} 
+      CENSUS_API_KEY: ${{ secrets.CENSUS_API_KEY }}
+      R_LIBS_USER: ${{ runner.temp }}/Library
 
     steps:
       - name: 🚀 Checkout Repository
@@ -42,16 +43,7 @@ jobs:
       - name: 🔧 Install Python Dependencies
         run: |
           pip install -r requirements.txt
-          pip install polars gdown requests pandas matplotlib seaborn jupyter-cache
-
-      - name: 🔧 Install R Dependencies
-        run: |
-          Rscript -e 'install.packages(c("rmarkdown", "knitr", "pacman", "httr", "jsonlite", "readr", "dplyr", "lubridate", "tidyr", "xml2", "rvest", "chromote", "reactable", "htmltools", "scales", "reactablefmtr", "pdftools", "tm", "tidytext", "stringr", "wbstats", "ggplot2", "skimr", "broom"), repos = "https://cloud.r-project.org")'
-
-      - name: 🔐 Set Census API Key in R Session
-        run: |
-          echo 'Sys.setenv(CENSUS_API_KEY = Sys.getenv("CENSUS_API_KEY"))' > .Rprofile
-          cat .Rprofile  # Just to confirm
+          pip install polars gdown requests pandas matplotlib seaborn
 
       - name: 🔧 Install System Dependencies
         run: |
@@ -60,16 +52,29 @@ jobs:
             libcurl4-openssl-dev \
             libssl-dev \
             libxml2-dev \
+            libfontconfig1-dev \
+            poppler-utils \
+            libpoppler-cpp-dev
+
+      - name: 🔧 Install Core R Dependencies
+        run: |
+          mkdir -p "$R_LIBS_USER"
+          Rscript -e 'dir.create(Sys.getenv("R_LIBS_USER"), recursive=TRUE, showWarnings=FALSE); .libPaths(c(Sys.getenv("R_LIBS_USER"), .libPaths())); install.packages(c("rmarkdown", "knitr", "pacman", "httr2", "jsonlite", "readr", "dplyr", "lubridate", "tidyr", "rvest", "purrr", "stringr", "pdftools", "tm", "tidytext", "textdata", "janitor", "here"), repos = "https://cloud.r-project.org")'
+
+      - name: 🔧 Install Geospatial R Dependencies
+        run: |
+          sudo apt-get install -y \
             libudunits2-dev \
             libgdal-dev \
             libgeos-dev \
             libproj-dev \
-            libfontconfig1-dev \
-            gdal-bin \
-            gfortran \
-            poppler-utils \
-            libpoppler-cpp-dev \
-            qpdf
+            gdal-bin
+          Rscript -e '.libPaths(c(Sys.getenv("R_LIBS_USER"), .libPaths())); install.packages(c("sf", "tigris", "units", "tidycensus", "chromote", "reactable", "reactablefmtr", "scales", "htmltools", "RSelenium", "readxl", "magrittr"), repos = "https://cloud.r-project.org")'
+
+      - name: 🔐 Set Census API Key in R Session
+        run: |
+          echo 'Sys.setenv(CENSUS_API_KEY = Sys.getenv("CENSUS_API_KEY"))' > .Rprofile
+          cat .Rprofile
 
       - name: 🔧 Install Quarto 1.6+
         run: |
