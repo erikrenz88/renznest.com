@@ -14,7 +14,6 @@ jobs:
 
     env:
       CENSUS_API_KEY: ${{ secrets.CENSUS_API_KEY }}
-      R_LIBS_USER: ${{ runner.temp }}/Library
 
     steps:
       - name: 🚀 Checkout Repository
@@ -58,11 +57,13 @@ jobs:
 
       - name: 🔧 Install Core R Dependencies
         run: |
+          export R_LIBS_USER="$RUNNER_TEMP/Library"
           mkdir -p "$R_LIBS_USER"
           Rscript -e 'dir.create(Sys.getenv("R_LIBS_USER"), recursive=TRUE, showWarnings=FALSE); .libPaths(c(Sys.getenv("R_LIBS_USER"), .libPaths())); install.packages(c("rmarkdown", "knitr", "pacman", "httr2", "jsonlite", "readr", "dplyr", "lubridate", "tidyr", "rvest", "purrr", "stringr", "pdftools", "tm", "tidytext", "textdata", "janitor", "here"), repos = "https://cloud.r-project.org")'
 
       - name: 🔧 Install Geospatial R Dependencies
         run: |
+          export R_LIBS_USER="$RUNNER_TEMP/Library"
           sudo apt-get install -y \
             libudunits2-dev \
             libgdal-dev \
