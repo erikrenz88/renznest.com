@@ -39,10 +39,15 @@ jobs:
       - name: 🔧 Set Environment for Chromote
         run: echo "CHROMOTE_CHROME=/usr/bin/google-chrome-stable" >> $GITHUB_ENV
 
+      - name: 🔧 Set R library path
+        run: |
+          echo "R_LIBS_USER=$RUNNER_TEMP/Library" >> $GITHUB_ENV
+          mkdir -p "$RUNNER_TEMP/Library"
+
       - name: 🔧 Install Python Dependencies
         run: |
-          pip install -r requirements.txt
-          pip install polars gdown requests pandas matplotlib seaborn
+          python -m pip install -U uv
+          python -m uv pip install --system -r requirements.txt polars gdown requests pandas matplotlib seaborn
 
       - name: 🔧 Install System Dependencies
         run: |
@@ -59,18 +64,21 @@ jobs:
         run: |
           export R_LIBS_USER="$RUNNER_TEMP/Library"
           mkdir -p "$R_LIBS_USER"
-          Rscript -e 'dir.create(Sys.getenv("R_LIBS_USER"), recursive=TRUE, showWarnings=FALSE); .libPaths(c(Sys.getenv("R_LIBS_USER"), .libPaths())); install.packages(c("rmarkdown", "knitr", "pacman", "httr2", "jsonlite", "readr", "dplyr", "lubridate", "tidyr", "rvest", "purrr", "stringr", "pdftools", "tm", "tidytext", "textdata", "janitor", "here"), repos = "https://cloud.r-project.org")'
+          Rscript -e 'dir.create(Sys.getenv("R_LIBS_USER"), recursive=TRUE, showWarnings=FALSE); .libPaths(c(Sys.getenv("R_LIBS_USER"), .libPaths())); if (!requireNamespace("pak", quietly=TRUE)) install.packages("pak", repos = "https://cloud.r-project.org"); pak::pkg_install(c("rmarkdown", "knitr", "pacman", "httr2", "jsonlite", "readr", "dplyr", "lubridate", "tidyr", "rvest", "purrr", "stringr", "pdftools", "tm", "tidytext", "textdata", "janitor", "here"))'
 
       - name: 🔧 Install Geospatial R Dependencies
         run: |
-          export R_LIBS_USER="$RUNNER_TEMP/Library"
           sudo apt-get install -y \
             libudunits2-dev \
             libgdal-dev \
             libgeos-dev \
             libproj-dev \
             gdal-bin
-          Rscript -e '.libPaths(c(Sys.getenv("R_LIBS_USER"), .libPaths())); install.packages(c("sf", "tigris", "units", "tidycensus", "chromote", "reactable", "reactablefmtr", "scales", "htmltools", "RSelenium", "readxl", "magrittr"), repos = "https://cloud.r-project.org")'
+          Rscript -e '.libPaths(c(Sys.getenv("R_LIBS_USER"), .libPaths())); if (!requireNamespace("pak", quietly=TRUE)) install.packages("pak", repos = "https://cloud.r-project.org"); pak::pkg_install(c("sf", "tigris", "units", "tidycensus", "chromote", "reactable", "reactablefmtr", "scales", "htmltools", "RSelenium", "readxl", "magrittr"))'
+
+      - name: 🔧 Verify R packages
+        run: |
+          Rscript -e 'cat(.libPaths(), sep="\n"); library(rmarkdown); cat("rmarkdown loaded\n")'
 
       - name: 🔐 Set Census API Key in R Session
         run: |
