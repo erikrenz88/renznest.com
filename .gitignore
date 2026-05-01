@@ -70,3 +70,4 @@ test.qmd
 
 
 /_dev/
+**/*.quarto_ipynb

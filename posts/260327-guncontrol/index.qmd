@@ -1,0 +1,427 @@
+---
+title: "Should Guns be Controlled in the USA?" 
+date: "2026-03-27"
+format:
+  html:
+    include-in-header:
+      text: |
+        <script src="https://cdn.jsdelivr.net/npm/@observablehq/runtime@5/dist/runtime.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/@observablehq/stdlib@5/dist/stdlib.js"></script>
+categories: [gun control, america, news, amendment]
+image: "" 
+filters:
+  - social-share
+share:
+  permalink: "https://www.renznest.com/posts/260327-guncontrol/index.html"
+  description: "A fierce debate that spans decades with data being frought with subjectivity."
+  location: "before-body"
+  twitter: true
+  facebook: true
+  reddit: true
+  stumble: true
+  tumblr: true
+  linkedin: true
+  email: true
+  mastodon: true
+  bsky: true
+bluesky-comments:
+  profile: https://bsky.app/profile/renznest.com
+  mute-patterns:
+    - "📌"
+    - "🔥"
+    - "/\\bspam\\b/i"  # regex pattern
+  filter-empty-replies: true
+---
+
+## Where does this debate stem from?
+The United States has a long history with firearms. As a country founded on protecting itself and its citizens from tyranny and the foundational belief of individual rights, the right to bear arms is protected in the Second Amenement of The Constitution. But with everything, there are two sides to the story; the increase in gun-related events and protection of individual rights is a point of contention across the country. This post takes a look at the data and makes some objective observations and subjective suggestions on the gun control debate.
+
+## Why is it so hard to have a clear discussion about gun control?
+Gun control arguments come in many forms: number of deaths, mass shootings, self-harm, self-defence, personal rights... The data can be sliced by many different paths and often is depending on the argument and the intended outcome. The most common slices include:
+
+1. **Mortality:** fatal shootings broken down by homicide, suicide, accident, and legal intervention.
+2. **Nonfatal violence:** injuries, hospitalizations, and shootings that do not result in death.
+3. **Incident counts:** daily reports, mass shootings, and non-mass events.
+4. **Policy and enforcement:** who can buy a gun, what checks exist, and whether those rules are actually enforced.
+
+The biggest mistake in gun-data debates is treating these slices as interchangeable. A rise in firearm suicides is not the same policy problem as a rise in mass-shooting homicides, and the presence of mental illness is not the same as the presence of a gun.
+
+There is a very clear emotional component as well which makes a salient, objective argument very challening.
+
+### Let's start at the very beginning
+It could be argued that I'm single-ing out the US because it's where I live or because its in the news so much or because its part of the culture. The data shows the reason the US is of interest.
+
+```{r, echo = FALSE}
+library('pacman')
+pacman::p_load(
+  httr2,
+  jsonlite,
+  dplyr,
+  purrr
+)
+
+who_fetch <- function(indicator, filters = NULL, top = NULL) {
+  url <- paste0("https://ghoapi.azureedge.net/api/", indicator)
+  
+  params <- list()
+  if (!is.null(filters)) params[["$filter"]] <- filters
+  if (!is.null(top))     params[["$top"]]    <- top
+  
+  resp <- request(url) |>
+    req_url_query(!!!params) |>
+    req_perform()
+  
+  resp |>
+    resp_body_json(simplifyVector = TRUE) |>
+    pluck("value") |>
+    as_tibble()
+}
+
+who_search <- function(term) {
+  request("https://ghoapi.azureedge.net/api/Indicator") |>
+    req_url_query(`$filter` = paste0("contains(IndicatorName,'", term, "')")) |>
+    req_perform() |>
+    resp_body_json(simplifyVector = TRUE) |>
+    pluck("value") |>
+    as_tibble() |>
+    select(IndicatorCode, IndicatorName)
+}
+
+peers <- c("USA","AUS","CAN","GBR","DEU","FRA","JPN",
+           "NZL","SWE","NOR","DNK","FIN","CHE","NLD","AUT","BEL")
+
+# ── Point 1: U.S. as outlier — homicide rate cross-country ──────────────────
+homicide_rate <- who_fetch(
+  "VIOLENCE_HOMICIDERATE"
+  # no Dim1 filter — check what dimensions exist first (see below)
+)
+
+# ── Point 2: Suicide rate ────────────────────────────────────────────────────
+suicide_rate <- who_fetch("SDGSUICIDE")        # crude rate per 100k
+suicide_agestd <- who_fetch("MH_12")           # age-standardized rate
+
+# ── Points 3 & 4: Homicide counts for U.S. timeline ─────────────────────────
+homicide_count <- who_fetch(
+  "VIOLENCE_HOMICIDENUM",
+  filter = "SpatialDim eq 'USA'"
+)
+
+# Check valid Dim1 values before filtering
+homicide_rate |> count(Dim1)
+suicide_rate  |> count(Dim1)
+
+# Then filter based on what you actually see, e.g.:
+homicide_peers <- homicide_rate |>
+  filter(SpatialDim %in% peers) |>
+  filter(Dim1 == "BTSX" | is.na(Dim1)) |>  # use whatever count() showed
+  select(country = SpatialDim, year = TimeDim, value = NumericValue) |>
+  filter(!is.na(value))
+
+```
+
+```{r, echo = FALSE}
+
+# ── Point 1: Homicide rate — peer nations ────────────────────────────────────
+homicide_peers <- who_fetch(
+  "VIOLENCE_HOMICIDERATE",
+  filter = "Dim1 eq 'SEX_BTSX'"
+) |>
+  filter(SpatialDim %in% peers) |>
+  select(country = SpatialDim, year = TimeDim, value = NumericValue) |>
+  filter(!is.na(value))
+
+# ── Point 2: Suicide rate — peer nations ─────────────────────────────────────
+suicide_peers <- who_fetch(
+  "SDGSUICIDE",
+  filter = "Dim1 eq 'SEX_BTSX'"
+) |>
+  filter(SpatialDim %in% peers) |>
+  select(country = SpatialDim, year = TimeDim, value = NumericValue) |>
+  filter(!is.na(value))
+
+# ── Points 3 & 4: U.S. only, both series, for timeline ──────────────────────
+usa_homicide <- who_fetch(
+  "VIOLENCE_HOMICIDERATE",
+  filter = "SpatialDim eq 'USA' and Dim1 eq 'SEX_BTSX'"
+) |>
+  select(year = TimeDim, homicide_rate = NumericValue) |>
+  filter(!is.na(homicide_rate)) |>
+  arrange(year)
+
+usa_suicide <- who_fetch(
+  "SDGSUICIDE",
+  filter = "SpatialDim eq 'USA' and Dim1 eq 'SEX_BTSX'"
+) |>
+  select(year = TimeDim, suicide_rate = NumericValue) |>
+  filter(!is.na(suicide_rate)) |>
+  arrange(year)
+
+usa_combined <- full_join(usa_homicide, usa_suicide, by = "year")
+```
+
+```{r, echo = FALSE}
+# Replace these datasets with your actual named variables.
+# If you want to define them in R, set them before calling ojs_define.
+ojs_define(
+  peer_homicide = peer_homicide,
+  timeline_events = timeline_events,
+  lobbying_data = lobbying_data,
+  suicide_trend = suicide_trend
+)
+```
+
+## Visual story
+
+### 1. The U.S. as an outlier among peers
+```{ojs}
+//| label: us-outlier
+//| echo: false
+Plot = import('https://cdn.jsdelivr.net/npm/@observablehq/plot@0.6.16/+esm')
+d3 = require('d3@7')
+
+const data = peer_homicide.slice().sort((a, b) => d3.descending(a.value, b.value))
+
+Plot.plot({
+  width: 800,
+  height: 420,
+  margin: 50,
+  x: {
+    label: 'Country',
+    tickRotate: -45
+  },
+  y: {
+    label: 'Rate per 100k',
+    grid: true
+  },
+  marks: [
+    Plot.barY(data, {
+      x: 'country',
+      y: 'value',
+      fill: d => d.country === 'USA' ? '#ca1551' : '#75b09c',
+      title: d => `${d.country}: ${d.value}`
+    }),
+    Plot.ruleY([0])
+  ]
+})
+```
+
+### 2. The legislative and judicial timeline with outcomes
+```{ojs}
+//| label: policy-timeline
+//| echo: false
+Plot = import('https://cdn.jsdelivr.net/npm/@observablehq/plot@0.6.16/+esm')
+d3 = require('d3@7')
+
+const timeline = timeline_events.map(d => ({
+  ...d,
+  lane: d.type === 'law' ? 1 : d.type === 'court' ? 2 : 3
+}))
+
+Plot.plot({
+  width: 800,
+  height: 380,
+  margin: 50,
+  x: {
+    label: 'Year'
+  },
+  y: {
+    domain: [0.5, 3.5],
+    tickFormat: d => {
+      if (d === 1) return 'Law';
+      if (d === 2) return 'Court';
+      return 'Other';
+    },
+    ticks: 3
+  },
+  marks: [
+    Plot.ruleX(timeline, {x: 'year', stroke: '#e0e0e0'}),
+    Plot.dot(timeline, {
+      x: 'year',
+      y: 'lane',
+      fill: 'type',
+      title: d => `${d.year}: ${d.event}`
+    }),
+    Plot.text(timeline, {
+      x: 'year',
+      y: 'lane',
+      text: d => d.label || d.event,
+      dy: -10,
+      fontSize: 10,
+      textAnchor: 'middle'
+    })
+  ]
+})
+```
+
+### 3. Politics and lobbying shaping the gap
+```{ojs}
+//| label: lobbying-gap
+//| echo: false
+Plot = import('https://cdn.jsdelivr.net/npm/@observablehq/plot@0.6.16/+esm')
+d3 = require('d3@7')
+
+Plot.plot({
+  width: 800,
+  height: 420,
+  margin: 50,
+  x: {
+    label: 'Year'
+  },
+  y: {
+    label: 'Lobbying dollars',
+    tickFormat: d3.format('$.2s'),
+    grid: true
+  },
+  color: {
+    legend: true,
+    label: 'Issue'
+  },
+  marks: [
+    Plot.barY(lobbying_data, {
+      x: 'year',
+      y: 'amount',
+      fill: 'issue',
+      title: d => `${d.issue} (${d.year}): ${d3.format('$,.0f')(d.amount)}`
+    }),
+    Plot.ruleY([0])
+  ]
+})
+```
+
+### 4. Mental health narrowed to suicide
+```{ojs}
+//| label: suicide-trend
+//| echo: false
+Plot = import('https://cdn.jsdelivr.net/npm/@observablehq/plot@0.6.16/+esm')
+d3 = require('d3@7')
+
+Plot.plot({
+  width: 800,
+  height: 420,
+  margin: 50,
+  x: {
+    label: 'Year'
+  },
+  y: {
+    label: 'Rate per 100k',
+    grid: true
+  },
+  marks: [
+    Plot.line(suicide_trend, {
+      x: 'year',
+      y: 'firearm_suicide_rate',
+      stroke: '#ca1551',
+      title: d => `Firearm suicide (${d.year}): ${d.firearm_suicide_rate}`
+    }),
+    Plot.dot(suicide_trend, {
+      x: 'year',
+      y: 'firearm_suicide_rate',
+      fill: '#ca1551',
+      title: d => `Firearm suicide (${d.year}): ${d.firearm_suicide_rate}`
+    }),
+    Plot.line(suicide_trend, {
+      x: 'year',
+      y: 'suicide_rate',
+      stroke: '#75b09c',
+      title: d => `All suicide (${d.year}): ${d.suicide_rate}`
+    }),
+    Plot.dot(suicide_trend, {
+      x: 'year',
+      y: 'suicide_rate',
+      fill: '#75b09c',
+      title: d => `All suicide (${d.year}): ${d.suicide_rate}`
+    })
+  ]
+})
+```
+
+## Are gun-related deaths increasing?
+The available evidence points to a long-term increase in gun mortality, with some important qualifications.
+
+- The U.S. firearm death rate is higher than that of almost all peer nations, and it has generally trended upward since the early 2000s.
+- The overall number of firearm deaths is driven largely by suicides; about two-thirds of gun deaths are self-inflicted rather than the result of homicide.
+- Homicide rates also increased after the mid-2010s, especially during the pandemic years, but they remain only part of the story.
+
+These trends emerge consistently in public data from sources such as Pew Research and the Centers for Disease Control, and they are reflected in day-to-day incident reporting from the Gun Violence Archive.
+
+### What the slices tell us
+- **Mass shootings:** The attention is real, but mass shootings are a small fraction of total firearm deaths.
+- **Everyday shootings:** Non-mass incidents account for the majority of victims and often include domestic violence, street crime, and accidental discharges.
+- **Suicide:** The largest single share of gun deaths. Because firearms are highly lethal, greater access tends to raise the suicide fatality rate.
+
+So the objective answer is: yes, gun-related deaths in the U.S. are not static, and the larger trend is upward, especially when the data are examined across multiple categories.
+
+## Is there an association between gun violence and mental health?
+The relationship between mental health and firearms is real but nuanced.
+
+- **Strongest link:** firearm suicide. Mental health conditions such as depression and bipolar disorder are risk factors for self-harm, and access to guns increases the lethality of suicide attempts.
+- **Weaker link:** interpersonal violence. Most people with mental illness are not violent, and most violent acts are not committed by people with diagnosed psychiatric conditions.
+- **Policy implication:** mental health treatment alone is unlikely to solve gun homicide or mass shooting rates. Reducing firearm access for people in crisis is one useful measure, but it must be paired with broader prevention strategies.
+
+Public discussion often overstates the role of mental illness in homicide, while understating the contribution of access, inequality, substance abuse, and domestic conflict. In short, mental health matters most to firearm suicide and less reliably to broader patterns of gun violence.
+
+## Brief history of U.S. gun law
+
+### Early years
+
+The Second Amendment emerged in a time of militias, not modern police. Early U.S. law generally left firearms regulation to states, and there were few national restrictions prior to the twentieth century.
+
+### 1930s–1960s: The first federal controls
+
+- **1934 National Firearms Act:** imposed taxes and registration on machine guns, sawed-off shotguns, and other weapons after the gangster era.
+- **1938 Federal Firearms Act:** required federal licenses for gun dealers and prohibited interstate sales to certain prohibited persons.
+- **1968 Gun Control Act:** passed after the assassinations of the 1960s, it barred felons, drug users, and people adjudicated mentally ill from buying guns and created more uniform federal regulation.
+
+### 1980s–1990s: Background checks and bans
+
+- **1986 Firearm Owners Protection Act:** limited federal inspections and created the Hughes Amendment, which banned new civilian ownership of machine guns manufactured after 1986.
+- **1993 Brady Act:** established federal background checks and a waiting period for gun purchases from licensed dealers.
+- **1994 Federal Assault Weapons Ban:** restricted certain semiautomatic rifles and large-capacity magazines until it expired in 2004.
+
+### Constitutional and political shifts
+
+- **2008 District of Columbia v. Heller:** the Supreme Court recognized an individual right to possess a firearm for self-defense in the home.
+- **2022 New York State Rifle & Pistol Association v. Bruen:** the Court limited states’ ability to impose “may issue” rules for concealed carry, raising the constitutional bar for gun regulation.
+
+### Today
+
+Current U.S. gun law is a patchwork:
+
+- federal baseline rules exist for background checks, prohibited persons, and certain weapons,
+- states vary widely on permits, background check requirements, safe storage, and assault weapons,
+- enforcement depends on agency resources and political leadership.
+
+This history shows that gun law has moved from near-total state discretion to a federal minimum, and that the direction of policy has periodically swung between expansion and restriction.
+
+## What does the evidence say now?
+
+The objective data suggest three main points:
+
+1. **Gun deaths are not falling in the United States.** The overall trajectory of firearm mortality is upward over the last two decades.
+2. **The biggest single problem is suicide.** Because firearms are so lethal, limiting access during crises can reduce deaths even if the underlying mental health condition remains.
+3. **Legal history matters.** Federal law has tightened in response to violence and weakened in response to political pressure; the current system remains uneven.
+
+That means the evidence supports taking the data seriously, while also making clear that the debate has become a stark policy dichotomy.
+
+- One path is to accept harsher restrictions designed to limit access and reduce gun violence.
+- The other path is to accept the likely increase in firearm-related events in exchange for broader access, rooted in the original intent of defending against tyranny and protecting individual self-defense.
+
+Both positions are consistent with different values, but the data make it clear that lighter gun laws are associated with more frequent gun events and more firearm deaths.
+
+## Conclusion
+
+A fair reading of the data does not produce a single definitive political answer, but it does show that the U.S. is not in a stable or benign situation. Gun deaths have increased, the burden of firearm suicide is large, and the connection between firearms and mental health is most powerful in self-harm rather than in general violent crime.
+
+At the same time, the history of U.S. gun law demonstrates that public policy evolves in response to crises, court decisions, and political pressure. Any durable solution must account for that history as well as the data.
+
+---
+
+###### Sources
+
+- [Pew Research: What the data says about gun deaths in the U.S.](https://www.pewresearch.org/short-reads/2025/03/05/what-the-data-says-about-gun-deaths-in-the-us/)
+- [Pew Research: Key facts about Americans and guns](https://www.pewresearch.org/short-reads/2024/07/24/key-facts-about-americans-and-guns/)
+- [Gun Violence Archive](https://www.gunviolencearchive.org/)
+- [OpenSecrets federal lobbying on gun issues](https://www.opensecrets.org/federal-lobbying/bills/specific_issues?client_id=D000000082&cycle=2020&id=s4301-116)
+- [ATF report](https://www.atf.gov/media/16741/download)
+
+      

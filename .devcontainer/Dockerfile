@@ -1,7 +1,8 @@
 FROM mcr.microsoft.com/devcontainers/universal:2
 
 # Install Google Chrome (not snap)
-RUN apt-get update && apt-get install -y \
+RUN rm -f /etc/apt/sources.list.d/yarn.list && \
+    apt-get update && apt-get install -y \
     wget \
     gnupg \
     ca-certificates && \
