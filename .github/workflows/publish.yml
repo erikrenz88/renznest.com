@@ -64,7 +64,7 @@ jobs:
         run: |
           export R_LIBS_USER="$RUNNER_TEMP/Library"
           mkdir -p "$R_LIBS_USER"
-          Rscript -e 'dir.create(Sys.getenv("R_LIBS_USER"), recursive=TRUE, showWarnings=FALSE); .libPaths(c(Sys.getenv("R_LIBS_USER"), .libPaths())); if (!requireNamespace("pak", quietly=TRUE)) install.packages("pak", repos = "https://cloud.r-project.org"); pak::pkg_install(c("rmarkdown", "knitr", "pacman", "httr2", "jsonlite", "readr", "dplyr", "lubridate", "tidyr", "rvest", "purrr", "stringr", "pdftools", "tm", "tidytext", "textdata", "janitor", "here"))'
+          Rscript -e 'dir.create(Sys.getenv("R_LIBS_USER"), recursive=TRUE, showWarnings=FALSE); .libPaths(c(Sys.getenv("R_LIBS_USER"), .libPaths())); if (!requireNamespace("pak", quietly=TRUE)) install.packages("pak", repos = "https://cloud.r-project.org"); pak::pkg_install(c("rmarkdown", "knitr", "pacman", "httpuv", "jsonlite", "readr", "dplyr", "lubridate", "tidytext", "textdata", "janitor", "here"))'
 
       - name: 🔧 Install Geospatial R Dependencies
         run: |
@@ -74,13 +74,13 @@ jobs:
             libgeos-dev \
             libproj-dev \
             gdal-bin
-          Rscript -e '.libPaths(c(Sys.getenv("R_LIBS_USER"), .libPaths())); if (!requireNamespace("pak", quietly=TRUE)) install.packages("pak", repos = "https://cloud.r-project.org"); pak::pkg_install(c("sf", "tigris", "units", "tidycensus", "chromote", "reactable", "reactablefmtr", "scales", "htmltools", "RSelenium", "readxl", "magrittr"))'
+          Rscript -e '.libPaths(c(Sys.getenv("R_LIBS_USER"), .libPaths())); if (!requireNamespace("pak", quietly=TRUE)) install.packages("pak", repos = "https://cloud.r-project.org"); pak::pkg_install(c("sf", "tigris", "units", "tidycensus", "chromote", "reactable", "scales", "htmltools", "RSelenium", "readxl", "magrittr"))'
 
       - name: 🔧 Verify R packages
         run: |
           Rscript -e 'cat(.libPaths(), sep="\n"); library(rmarkdown); cat("rmarkdown loaded\n")'
 
-      - name: 🔐 Set Census API Key in R Session
+      - name: 🐐 Set Census API Key in R Session
         run: |
           echo 'Sys.setenv(CENSUS_API_KEY = Sys.getenv("CENSUS_API_KEY"))' > .Rprofile
           cat .Rprofile
