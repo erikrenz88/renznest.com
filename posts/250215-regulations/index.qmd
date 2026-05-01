@@ -85,7 +85,7 @@ os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "credentials.json"
 # regs = pl.read_csv('full_regulations.csv')
 
 # Use gdown with credentials
-gdown.download(id=file_id, output=output, quiet=False, fuzzy=True)
+gdown.download(id=file_id, output=output, quiet=False)
 
 if not os.path.exists(output) or os.path.getsize(output) == 0:
     raise Exception("File download failed! Check Google Drive permissions and authentication.")
