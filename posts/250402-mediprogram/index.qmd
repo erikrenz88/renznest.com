@@ -1,7 +1,6 @@
 ---
 title: "Medi-Programs"
 date: "2025-04-02"
-draft: true
 format:
   html:
     include-in-header:
@@ -47,9 +46,7 @@ pacman::p_load(
     janitor,
     readr,
     readxl,
-    RSelenium,
     curl,
-    chromote,
     reactable,
     reactablefmtr,
     scales,
@@ -112,30 +109,30 @@ votes <- df_names[14:nrow(df_names), 1:11] |>
     )
 ```
 
-```{r, results="hide"}
-Sys.getenv("CHROMOTE_CHROME")
+```{r}
+# Official CMS/Medicaid.gov open-data source for the same figures that used
+# to be scraped from the (now bot-blocked) report-highlights page. This is
+# the Performance Indicator dataset: https://data.medicaid.gov/dataset/6165f45b-ca93-5bb5-9d06-db29c692a360
+# The CSV filename changes with each monthly release, so resolve today's
+# download URL from the dataset's metadata rather than hardcoding it.
+medicaid_dataset <- jsonlite::fromJSON(
+  "https://data.medicaid.gov/api/1/metastore/schemas/dataset/items/6165f45b-ca93-5bb5-9d06-db29c692a360"
+)
+medicaid_csv_url <- medicaid_dataset$distribution$downloadURL[1]
 
-# Start a headless browser session
-b <- ChromoteSession$new()
+medicaid_raw <- read_csv(medicaid_csv_url, show_col_types = FALSE) |>
+  clean_names()
 
-# Navigate to the Medicaid & CHIP enrollment highlights page
-b$Page$navigate("https://www.medicaid.gov/medicaid/program-information/medicaid-and-chip-enrollment-data/report-highlights")
-b$Page$loadEventFired()
+# Each state reports a "Preliminary" and later "Updated"/final row per month;
+# use the most recent month that has a final report for every state.
+latest_final_period <- medicaid_raw |>
+  filter(final_report == "Y") |>
+  pull(reporting_period) |>
+  max()
 
-# Wait for JavaScript-rendered content to load
-Sys.sleep(5) 
-
-# Extract the rendered page source
-html <- b$Runtime$evaluate("document.documentElement.outerHTML")$result$value
-
-# Parse the HTML and extract the table
-page <- read_html(html)
-tables <- page %>% html_elements("table")
-
-# Extract the first table (adjust index if needed)
-medicaid <- tables[[1]] %>% html_table() |>
-  clean_names() |>
-  select(!c('state_expanded_medicaid', 'state_notes')) |>
+medicaid <- medicaid_raw |>
+  filter(final_report == "Y", reporting_period == latest_final_period) |>
+  select(state = state_name, medicaid_enrollment = total_medicaid_enrollment) |>
   pivot_longer(
     cols = !state,
     names_to = 'metric',
@@ -143,9 +140,6 @@ medicaid <- tables[[1]] %>% html_table() |>
   ) |>
   mutate(
     party = 'medicaid',
-    value = str_remove_all(value, ','),
-    value = if_else(value == '', '0', value),
-    value = str_trim(value),
     value = as.numeric(value)
   )
 ```

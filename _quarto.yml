@@ -4,7 +4,6 @@ project:
   render:
     - "*.qmd"
     - "!posts/260327-guncontrol/"
-    - "!posts/250402-mediprogram/"
   resources:
     - private/
     - work-products/
