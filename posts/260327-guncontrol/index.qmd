@@ -159,7 +159,7 @@ usa_suicide <- who_fetch(
 usa_combined <- full_join(usa_homicide, usa_suicide, by = "year")
 ```
 
-```{r, echo = FALSE}
+```{r, echo = FALSE, cache = FALSE}
 # Replace these datasets with your actual named variables.
 # If you want to define them in R, set them before calling ojs_define.
 ojs_define(

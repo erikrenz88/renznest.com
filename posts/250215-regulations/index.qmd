@@ -365,6 +365,7 @@ df_results = pl.DataFrame(analysis_results)
 ```
 
 ```{python}
+#| cache: false
 # Congress Law Mapping
 congress_map = {
     "2012": [112], "2013": [113], "2014": [113],
