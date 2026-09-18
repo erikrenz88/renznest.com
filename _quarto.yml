@@ -1,6 +1,9 @@
 project:
   type: website
   output-dir: _site
+  render:
+    - "*.qmd"
+    - "!posts/260327-guncontrol/"
   resources:
     - private/
     - work-products/
@@ -36,9 +39,6 @@ website:
         href: index.xml
       - icon: envelope
         href: mailto:erik@renznest.com
-    drafts:
-      - posts/guncontrol.qmd
-    draft-mode: gone
 
 format:
   html:
