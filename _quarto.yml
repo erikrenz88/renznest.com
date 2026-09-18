@@ -14,7 +14,6 @@ website:
   title: "The Renz Nest"
   site-url: https://renznest.com
   description: "Honest information out in the open"
-  drafts-mode: gone
   open-graph: true
   cookie-consent: true
   google-analytics: 'G-TJEDVLDBLF'
@@ -37,6 +36,9 @@ website:
         href: index.xml
       - icon: envelope
         href: mailto:erik@renznest.com
+    drafts:
+      - posts/guncontrol.qmd
+    draft-mode: gone
 
 format:
   html:
