@@ -1,6 +1,7 @@
 ---
-title: "Should Guns be Controlled in the USA?" 
+title: "Should Guns be Controlled in the USA?"
 date: "2026-03-27"
+draft: true
 format:
   html:
     include-in-header:
